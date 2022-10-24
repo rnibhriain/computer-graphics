@@ -16,7 +16,12 @@
 
 using namespace std;
 
+
+
 //typedef double DWORD;
+vec3 PosData(0.0f, 0.0f, 3.0f);
+
+Camera camera(PosData);
 
 
 // Macro for indexing vertex buffer
@@ -171,7 +176,8 @@ glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 const float radius = 10.0f;
 
-glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
+//glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
 void display(){
 
@@ -192,29 +198,24 @@ void display(){
 	//The model transform rotates the object by 45 degrees, the view transform sets the camera at -40 on the z-axis, and the perspective projection is setup using Antons method
 
 	// bottom-left
+	//
 	//mat4 view = translate (identity_mat4 (), vec3 (0.0, 0.0, -40.0));
 	//mat4 persp_proj = perspective(45.0, (float)width/(float)height, 0.1, 100.0);
 	//mat4 model = rotate_z_deg(identity_mat4(), 45);
-	glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-	mat4 persp_proj = perspective(45.0, (float)width / (float)height, 0.1f, 100.0f);
+
+	mat4 view = camera.GetViewMatrix();
+	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
 	mat4 model = identity_mat4();
 
-	glViewport (0, 0, width / 2, height / 2);
+	//glViewport (0, 0, width / 2, height / 2);
 	glUniformMatrix4fv (proj_mat_location, 1, GL_FALSE, persp_proj.m);
 	glUniformMatrix4fv (view_mat_location, 1, GL_FALSE, view.m);
 	glUniformMatrix4fv (matrix_location, 1, GL_FALSE, model.m);
 	glDrawArrays (GL_TRIANGLES, 0, teapot_vertex_count);
 
-	// bottom-right
-		
-	// top-left
-
-	// top-right
 
     glutSwapBuffers();
 }
-
-bool spin = false;
 
 void updateScene() {	
 
@@ -225,13 +226,6 @@ void updateScene() {
 	if (delta > 0.03f)
 		delta = 0.03f;
 	last_time = curr_time;
-
-	// Animate the rotation
-	float increment = 1.0f;
-	if (spin) {
-		//rotate_x += 20.0f * delta;
-		//rotate_y 
-	}
 	
 	// Draw the next frame
 	glutPostRedisplay();
@@ -244,17 +238,56 @@ void keyboard(unsigned char key, int x, int y)
 {
 	const float cameraSpeed = 0.05f;
 	if (key == 'w') {
-		cameraPos += cameraSpeed * cameraFront;
+		camera.ProcessKeyboard(FORWARD, 0.1);
 	}
 	if (key == 'a') {
-		cameraPos -= cameraSpeed * cameraFront;
+		camera.ProcessKeyboard(LEFT, 0.1);
 	}
 	if (key == 'd') {
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		camera.ProcessKeyboard(RIGHT, 0.1);
 	}
 	if (key == 's') {
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		camera.ProcessKeyboard(BACKWARD, 0.1);
 	}
+}
+float lastX = width / 2.0f;
+float lastY = height / 2.0f;
+int startX, startY, tracking = 0;
+
+void processSelection(int xx, int yy) {
+	unsigned char res[4];
+	GLint viewport[4];
+
+	updateScene();
+
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	glReadPixels(xx, viewport[3] - yy, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &res);
+
+}
+
+void mouse(int button, int state, int x, int y)
+{
+	if (state == GLUT_DOWN) {
+		startX = x;
+		startY = y;
+		processSelection(x, y);
+	}
+}
+
+void mouseCallback(int x, int y) {
+	/**if (firstMouse) {
+		lastX = x;
+		lastY = y;
+		firstMouse = false;
+	}*/
+
+	float xoffset = x - lastX;
+	float yoffset = lastY - y; // reversed since y-coordinates go from bottom to top
+
+	lastX = x;
+	lastY = y;
+
+	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 void init()
@@ -286,6 +319,8 @@ int main(int argc, char** argv){
 	glutDisplayFunc(display);
 	glutIdleFunc(updateScene);
 	glutKeyboardFunc(keyboard);
+	glutPassiveMotionFunc(mouseCallback);
+	glutMouseFunc(mouse);
 
 	 // A call to glewInit() must be done after glut is initialized!
 	glewExperimental = GL_TRUE; //for non-lab machines, this line gives better modern GL support
