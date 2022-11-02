@@ -1,9 +1,6 @@
 #version 330
 
-in vec3 n_eye;
-
-out vec4 frag_colour;
-
+in vec3 LightIntensity;
 void main(){
-	frag_colour = vec4 (n_eye, 1.0);
+	gl_FragColor = vec4 (LightIntensity, 1.0);
 }
