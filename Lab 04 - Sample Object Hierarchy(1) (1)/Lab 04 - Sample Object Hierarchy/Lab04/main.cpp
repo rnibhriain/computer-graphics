@@ -37,6 +37,10 @@ unsigned int plane_vp_vbo = 0;
 unsigned int plane_vn_vbo = 0;
 unsigned int plane_vt_vbo = 0;
 
+unsigned int reindeer_vp_vbo = 0;
+unsigned int reindeer_vn_vbo = 0;
+unsigned int reindeer_vt_vbo = 0;
+
 
 #pragma region SimpleTypes
 typedef struct
@@ -265,6 +269,21 @@ void generateObjectBufferMesh() {
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, plane_data.mPointCount * sizeof(vec2), &plane_data.mTextureCoords[0], GL_STATIC_DRAW);
 
+	reindeer_vp_vbo = 0;
+	glGenBuffers(1, &reindeer_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mVertices[0], GL_STATIC_DRAW);
+
+	reindeer_vn_vbo = 0;
+	glGenBuffers(1, &reindeer_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mNormals[0], GL_STATIC_DRAW);
+
+	reindeer_vt_vbo = 0;
+	glGenBuffers(1, &reindeer_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec2), &mesh_data.mTextureCoords[0], GL_STATIC_DRAW);
+	
 	unsigned int vp_vbo = 0;
 	loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
 	loc2 = glGetAttribLocation(shaderProgramID, "vertex_normal");
@@ -365,18 +384,13 @@ void display(){
 	loc3 = glGetAttribLocation(shaderProgramID, "vertex_texture");
 	
 
-	//Here is where the code for the viewport lab will go, to get you started I have drawn a t-pot in the bottom left
-	//The model transform rotates the object by 45 degrees, the view transform sets the camera at -40 on the z-axis, and the perspective projection is setup using Antons method
-
-	// bottom-left
-	//
-	//mat4 view = translate (identity_mat4 (), vec3 (0.0, 0.0, -40.0));
-	//mat4 persp_proj = perspective(45.0, (float)width/(float)height, 0.1, 100.0);
-	//mat4 model = rotate_z_deg(identity_mat4(), 45);
-
 	mat4 view = camera.GetViewMatrix();
 	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
 	mat4 model = identity_mat4();
+	view = translate(view, vec3(0.0f, -10.0f, -60.0f));
+
+	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
+	glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view.m);
 
 
 	mat4 Plane = identity_mat4();
@@ -390,31 +404,25 @@ void display(){
 	glEnableVertexAttribArray(loc3);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
 
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
+	// update uniforms & draw
 	glDrawArrays(GL_TRIANGLES, 0, plane_data.mPointCount);
 
-
-	/*
-	// Set up the child matrix
-	mat4 modelChild = identity_mat4();
-	modelChild = rotate_z_deg(modelChild, 180);
-	modelChild = rotate_y_deg(modelChild, rotate_y);
-	modelChild = translate(modelChild, vec3(0.0f, 1.9f, 0.0f));
-
-	// Apply the root matrix to the child matrix
-	modelChild = model * modelChild;
-
-	// Update the appropriate unif..orm and draw the mesh again
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, modelChild.m);*/
-
-	//glViewport (0, 0, width / 2, height / 2);
-
-
-	glUniformMatrix4fv (proj_mat_location, 1, GL_FALSE, persp_proj.m);
-	glUniformMatrix4fv (view_mat_location, 1, GL_FALSE, view.m);
-	glUniformMatrix4fv (matrix_location, 1, GL_FALSE, model.m);
-	glDrawArrays (GL_TRIANGLES, 0, mesh_data.mPointCount);
+	mat4 reindeer = identity_mat4();
+	reindeer = translate(reindeer, vec3(5.0f, 0.0f, 0.0f));
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, reindeer.m);
+	glDrawArrays(GL_TRIANGLES, 1, mesh_data.mPointCount);
+	
 
 
     glutSwapBuffers();
