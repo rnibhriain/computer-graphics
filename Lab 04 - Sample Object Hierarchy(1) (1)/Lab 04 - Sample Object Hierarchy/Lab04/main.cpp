@@ -29,7 +29,9 @@ MESH TO LOAD
 ----------------------------------------------------------------------------*/
 // this mesh is a dae file format but you should be able to use any other format too, obj is typically what is used
 // put the mesh in your project directory, or provide a filepath for it here
-#define MESH_NAME "reindeer2.dae"
+#define MESH_BODY "snowman.dae"
+#define MESH_ARMS "snowmanArms.dae"
+#define MESH_HAT "snowmanHat.dae"
 #define PLANE_MESH "snow.dae"
 /*----------------------------------------------------------------------------
 ----------------------------------------------------------------------------*/
@@ -37,10 +39,17 @@ unsigned int plane_vp_vbo = 0;
 unsigned int plane_vn_vbo = 0;
 unsigned int plane_vt_vbo = 0;
 
-unsigned int reindeer_vp_vbo = 0;
-unsigned int reindeer_vn_vbo = 0;
-unsigned int reindeer_vt_vbo = 0;
+unsigned int snowman_vp_vbo = 0;
+unsigned int snowman_vn_vbo = 0;
+unsigned int snowman_vt_vbo = 0;
 
+unsigned int arms_vp_vbo = 0;
+unsigned int arms_vn_vbo = 0;
+unsigned int arms_vt_vbo = 0;
+
+unsigned int hat_vp_vbo = 0;
+unsigned int hat_vn_vbo = 0;
+unsigned int hat_vt_vbo = 0;
 
 #pragma region SimpleTypes
 typedef struct
@@ -57,13 +66,13 @@ GLuint shaderProgramID;
 
 ModelData mesh_data;
 ModelData plane_data;
+ModelData arms_data;
+ModelData hat_data;
 unsigned int mesh_vao = 0;
 
 
 // Macro for indexing vertex buffer
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
-
-
 
 unsigned int teapot_vao = 0;
 int width = 800.0;
@@ -250,9 +259,13 @@ void generateObjectBufferMesh() {
 	//Note: you may get an error "vector subscript out of range" if you are using this code for a mesh that doesnt have positions and normals
 	//Might be an idea to do a check for that before generating and binding the buffer.
 
-	mesh_data = load_mesh(MESH_NAME);
+	mesh_data = load_mesh(MESH_BODY);
+
+	arms_data = load_mesh(MESH_ARMS);
 
 	plane_data = load_mesh(PLANE_MESH);
+
+	hat_data = load_mesh(MESH_HAT);
 
 	plane_vp_vbo = 0;
 	glGenBuffers(1, &plane_vp_vbo);
@@ -264,63 +277,64 @@ void generateObjectBufferMesh() {
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vn_vbo);
 	glBufferData(GL_ARRAY_BUFFER, plane_data.mPointCount * sizeof(vec3), &plane_data.mNormals[0], GL_STATIC_DRAW);
 
+	/*
 	plane_vt_vbo = 0;
 	glGenBuffers(1, &plane_vt_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, plane_data.mPointCount * sizeof(vec2), &plane_data.mTextureCoords[0], GL_STATIC_DRAW);
-
-	reindeer_vp_vbo = 0;
-	glGenBuffers(1, &reindeer_vp_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vp_vbo);
-	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mVertices[0], GL_STATIC_DRAW);
-
-	reindeer_vn_vbo = 0;
-	glGenBuffers(1, &reindeer_vn_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vn_vbo);
-	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mNormals[0], GL_STATIC_DRAW);
-
-	reindeer_vt_vbo = 0;
-	glGenBuffers(1, &reindeer_vt_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vt_vbo);
-	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec2), &mesh_data.mTextureCoords[0], GL_STATIC_DRAW);
-	
-	unsigned int vp_vbo = 0;
-	loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
-	loc2 = glGetAttribLocation(shaderProgramID, "vertex_normal");
-	loc3 = glGetAttribLocation(shaderProgramID, "vertex_texture");
-
-	glGenBuffers(1, &vp_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vp_vbo);
-	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mVertices[0], GL_STATIC_DRAW);
-	unsigned int vn_vbo = 0;
-
-	/*
-	glGenBuffers(1, &vn_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vn_vbo);
-	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mNormals[0], GL_STATIC_DRAW);
 	*/
-	//	This is for texture coordinates which you don't currently need, so I have commented it out
-	//	unsigned int vt_vbo = 0;
-	//	glGenBuffers (1, &vt_vbo);
-	//	glBindBuffer (GL_ARRAY_BUFFER, vt_vbo);
-	//	glBufferData (GL_ARRAY_BUFFER, monkey_head_data.mTextureCoords * sizeof (vec2), &monkey_head_data.mTextureCoords[0], GL_STATIC_DRAW);
+	
 
-	unsigned int vao = 0;
-	glBindVertexArray(vao);
+	snowman_vp_vbo = 0;
+	glGenBuffers(1, &snowman_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mVertices[0], GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, vp_vbo);
-	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	
 
+	snowman_vn_vbo = 0;
+	glGenBuffers(1, &snowman_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mNormals[0], GL_STATIC_DRAW);
 	/*
-	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, vn_vbo);
-	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);*/
+	snowman_vt_vbo = 0;
+	glGenBuffers(1, &snowman_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec2), &mesh_data.mTextureCoords[0], GL_STATIC_DRAW);
+	*/
 
-	//	This is for texture coordinates which you don't currently need, so I have commented it out
-	//	glEnableVertexAttribArray (loc3);
-	//	glBindBuffer (GL_ARRAY_BUFFER, vt_vbo);
-	//	glVertexAttribPointer (loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+
+
+	arms_vp_vbo = 0;
+	glGenBuffers(1, &arms_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, arms_data.mPointCount * sizeof(vec3), &arms_data.mVertices[0], GL_STATIC_DRAW);
+
+
+
+	arms_vn_vbo = 0;
+	glGenBuffers(1, &arms_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, arms_data.mPointCount * sizeof(vec3), &arms_data.mNormals[0], GL_STATIC_DRAW);
+	/*
+	arms_vt_vbo = 0;
+	glGenBuffers(1, &arms_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, arms_data.mPointCount * sizeof(vec2), &arms_data.mTextureCoords[0], GL_STATIC_DRAW);
+	*/
+
+	hat_vp_vbo = 0;
+	glGenBuffers(1, &hat_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, hat_data.mPointCount * sizeof(vec3), &hat_data.mVertices[0], GL_STATIC_DRAW);
+
+
+
+	hat_vn_vbo = 0;
+	glGenBuffers(1, &hat_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, hat_data.mPointCount * sizeof(vec3), &hat_data.mNormals[0], GL_STATIC_DRAW);
+	
 }
 
 
@@ -362,8 +376,10 @@ glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 const float radius = 10.0f;
 
-
-//glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+float forward_x = 0;
+float forward_z = 0;
+GLfloat angle = 0;
+float rotate_x = 0;
 
 void display(){
 
@@ -373,6 +389,7 @@ void display(){
 	glClearColor (0.5f, 0.5f, 0.5f, 1.0f);
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram (shaderProgramID);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	//Declare your uniform variables that will be used in your shader
 	int matrix_location = glGetUniformLocation (shaderProgramID, "model");
@@ -394,7 +411,7 @@ void display(){
 
 
 	mat4 Plane = identity_mat4();
-	Plane = translate(Plane, vec3(5.0f, 0.0f, 0.0f));
+	Plane = translate(Plane, vec3(0.0f, 0.0f, 0.0f));
 	glEnableVertexAttribArray(loc1);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vp_vbo);
 	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -405,28 +422,72 @@ void display(){
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 
+	glActiveTexture(GL_TEXTURE1);
+
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
 	// update uniforms & draw
 	glDrawArrays(GL_TRIANGLES, 0, plane_data.mPointCount);
 
-	mat4 reindeer = identity_mat4();
-	reindeer = translate(reindeer, vec3(5.0f, 0.0f, 0.0f));
+	mat4 snowman = identity_mat4();
+	snowman = translate(snowman, vec3(-40.0f, 0.0f, 0.0f));
+	snowman = translate(snowman, vec3(0.0f, 0.0f, forward_x));
 	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vp_vbo);
 	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vn_vbo);
 	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(loc3);
-	glBindBuffer(GL_ARRAY_BUFFER, reindeer_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vt_vbo);
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, reindeer.m);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
+
+	glActiveTexture(GL_TEXTURE2);
 	glDrawArrays(GL_TRIANGLES, 1, mesh_data.mPointCount);
 	
+	mat4 arms = identity_mat4();
+	arms = translate(arms, vec3(0.0f, forward_z, 0.0f));
+	arms = snowman * arms;
+	
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, arms.m);
 
+	glActiveTexture(GL_TEXTURE2);
+	glDrawArrays(GL_TRIANGLES, 2, arms_data.mPointCount);
+
+	mat4 hat = identity_mat4();
+	hat = rotate_y_deg(hat, angle);
+	hat = snowman * hat;
+	
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat.m);
+
+	glActiveTexture(GL_TEXTURE2);
+	glDrawArrays(GL_TRIANGLES, 2, hat_data.mPointCount);
 
     glutSwapBuffers();
 }
+
+
+bool start = false;
+float x = 3.0f;
+float y = 3.0f;
 
 void updateScene() {	
 
@@ -437,11 +498,23 @@ void updateScene() {
 	if (delta > 0.03f)
 		delta = 0.03f;
 	last_time = curr_time;
+	if (start)
+	{	
+		
+		if (forward_z > 0.5f || forward_z < -0.5f) {
+			x = -x;
+		}
+		forward_z += x * delta;
+		if (forward_x > 40.0f || forward_x < -40.f) {
+			y = -y;
+		}
+		forward_x += y * delta;
+		angle += 1.0f;
+	}
 	
-	// Draw the next frame
+	// Draw the next framew
 	glutPostRedisplay();
 }
-
 
 
 //keyboard event handler
@@ -449,16 +522,19 @@ void keyboard(unsigned char key, int x, int y)
 {
 	const float cameraSpeed = 0.05f;
 	if (key == 'w') {
-		camera.ProcessKeyboard(FORWARD, 0.1);
+		camera.ProcessKeyboard(FORWARD, 0.5);
 	}
 	if (key == 'a') {
-		camera.ProcessKeyboard(LEFT, 0.1);
+		camera.ProcessKeyboard(LEFT, 0.5);
 	}
 	if (key == 'd') {
-		camera.ProcessKeyboard(RIGHT, 0.1);
+		camera.ProcessKeyboard(RIGHT, 0.5);
 	}
 	if (key == 's') {
-		camera.ProcessKeyboard(BACKWARD, 0.1);
+		camera.ProcessKeyboard(BACKWARD, 0.5);
+	}
+	if (key == 't') {
+		start = !start;
 	}
 }
 float lastX = width / 2.0f;
@@ -503,21 +579,9 @@ void mouseCallback(int x, int y) {
 
 void init()
 {
-	/*/
-	// Create 3 vertices that make up a triangle that fits on the viewport 
-	GLfloat vertices[] = {-1.0f, -1.0f, 0.0f, 1.0,
-			1.0f, -1.0f, 0.0f, 1.0, 
-			0.0f, 1.0f, 0.0f, 1.0};
-	// Create a color array that identfies the colors of each vertex (format R, G, B, A)
-	GLfloat colors[] = {0.0f, 1.0f, 0.0f, 1.0f,
-			1.0f, 0.0f, 0.0f, 1.0f,
-			0.0f, 0.0f, 1.0f, 1.0f};*/
+	
 	// Set up the shaders
 	GLuint shaderProgramID = CompileShaders();
-
-
-	// load teapot mesh into a vertex buffer array
-	//generateObjectBufferTeapot ();
 
 	generateObjectBufferMesh();
 	
