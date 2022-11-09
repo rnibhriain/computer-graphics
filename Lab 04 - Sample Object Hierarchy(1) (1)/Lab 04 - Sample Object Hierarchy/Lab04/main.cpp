@@ -376,8 +376,8 @@ glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 const float radius = 10.0f;
 
-float forward_x = 0;
-float forward_z = 0;
+GLfloat forward_x = 0;
+GLfloat forward_z = 0;
 GLfloat angle = 0;
 float rotate_x = 0;
 
@@ -426,7 +426,7 @@ void display(){
 
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
 	// update uniforms & draw
-	glDrawArrays(GL_TRIANGLES, 0, plane_data.mPointCount);
+	glDrawArrays(GL_TRIANGLES, 1, plane_data.mPointCount);
 
 	mat4 snowman = identity_mat4();
 	snowman = translate(snowman, vec3(-40.0f, 0.0f, 0.0f));
@@ -443,7 +443,7 @@ void display(){
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
 
 	glActiveTexture(GL_TEXTURE2);
-	glDrawArrays(GL_TRIANGLES, 1, mesh_data.mPointCount);
+	glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
 	
 	mat4 arms = identity_mat4();
 	arms = translate(arms, vec3(0.0f, forward_z, 0.0f));
@@ -461,7 +461,7 @@ void display(){
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, arms.m);
 
 	glActiveTexture(GL_TEXTURE2);
-	glDrawArrays(GL_TRIANGLES, 2, arms_data.mPointCount);
+	glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
 
 	mat4 hat = identity_mat4();
 	hat = rotate_y_deg(hat, angle);
@@ -479,7 +479,7 @@ void display(){
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat.m);
 
 	glActiveTexture(GL_TEXTURE2);
-	glDrawArrays(GL_TRIANGLES, 2, hat_data.mPointCount);
+	glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 
     glutSwapBuffers();
 }
