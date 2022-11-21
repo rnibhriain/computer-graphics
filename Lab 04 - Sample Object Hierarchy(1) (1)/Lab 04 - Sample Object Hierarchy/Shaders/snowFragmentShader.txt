@@ -1,12 +1,93 @@
 #version 330
+in vec3 LightIntensity;
+in vec3 FragPos;
+in vec3 Normal;
+in vec2 TexCoord;
 
-in vec3 vertex_position;
-in vec3 vertex_normal;
-in vec2 vertex_texture;
+struct Material {
+    //vec3 ambient;
+    //vec3 diffuse;
+	sampler2D diffuse;
+    vec3 specular;    
+    float shininess;
+}; 
 
-out vec3 LightIntensity;
-out vec3 FragPos;
-out vec3 Normal;
-out vec2 TexCoord;
+struct Light {
+    vec3 position;
 
-vec4
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
+struct DirLight {
+    vec3 direction;
+	
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
+struct PointLight {
+    vec3 position;
+    
+    float constant;
+    float linear;
+    float quadratic;
+	
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
+struct SpotLight {
+    vec3 position;
+    vec3 direction;
+    float cutOff;
+    float outerCutOff;
+  
+    float constant;
+    float linear;
+    float quadratic;
+  
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;       
+};
+
+#define NR_POINT_LIGHTS 3
+
+uniform Light light;
+uniform DirLight dirLight;
+uniform PointLight pointLights[NR_POINT_LIGHTS];
+uniform SpotLight spotLight;
+uniform Material material;
+
+uniform vec3 lightPos; 
+uniform vec3 viewPos; 
+uniform vec3 lightColor;
+uniform vec3 objectColor;
+
+out vec4 fragment_colour;
+
+// function prototypes
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
+
+void main(){
+	// properties
+    vec3 norm = normalize(Normal);
+    vec3 viewDir = normalize(viewPos - FragPos);
+
+	vec4 texColor = texture(material.diffuse, TexCoord);
+    if(texColor.a < 0.1)
+        discard;
+
+    
+    gl_FragColor = texColor * vec4(LightIntensity, 1.0);
+}
+
+
+
+

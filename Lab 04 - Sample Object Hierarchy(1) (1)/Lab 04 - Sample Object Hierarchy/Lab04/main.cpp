@@ -378,22 +378,21 @@ void display(){
 	// tell GL to only draw onto a pixel if the shape is closer to the viewer
 	glEnable (GL_DEPTH_TEST); // enable depth-testing
 	glDepthFunc (GL_LESS); // depth-testing interprets a smaller value as "closer"
-	glClearColor (0.5f, 0.5f, 0.5f, 1.0f);
+	glClearColor (0.0f, 0.5f, 0.5f, 1.0f);
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram (shaderProgramID);
+	glUseProgram (snowShader);
 	vec3 value = camera.Position;
 	std::string name = "viewPos";
 	glUniform3f(glGetUniformLocation(shaderProgramID,name.c_str()), value.v[0], value.v[1], value.v[2]);
 
 	//Declare your uniform variables that will be used in your shader
-	int matrix_location = glGetUniformLocation (shaderProgramID, "model");
-	int view_mat_location = glGetUniformLocation (shaderProgramID, "view");
-	int proj_mat_location = glGetUniformLocation (shaderProgramID, "proj");
+	int matrix_location = glGetUniformLocation (snowShader, "model");
+	int view_mat_location = glGetUniformLocation (snowShader, "view");
+	int proj_mat_location = glGetUniformLocation (snowShader, "proj");
 
-	loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
-	loc2 = glGetAttribLocation(shaderProgramID, "vertex_normal");
-	loc3 = glGetAttribLocation(shaderProgramID, "vertex_texture");
-	
+	loc1 = glGetAttribLocation(snowShader, "vertex_position");
+	loc2 = glGetAttribLocation(snowShader, "vertex_normal");
+	loc3 = glGetAttribLocation(snowShader, "vertex_texture");
 
 	mat4 view = camera.GetViewMatrix();
 	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
@@ -419,15 +418,19 @@ void display(){
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
 
 	glEnable(GL_TEXTURE_2D);
+
 	glGenTextures(1, &snowTexture);
-	glBindTexture(GL_TEXTURE_2D, snowTexture);
 
 	glActiveTexture(GL_TEXTURE1);
 
 	glBindTexture(GL_TEXTURE_2D, snowTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+		GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		GL_TEXTURE_2D, snowTexture, 0);
 
-	glDrawArrays(GL_TRIANGLES, 0, plane_data.mPointCount);
-
+	glDrawArrays(GL_TRIANGLES, 1, plane_data.mPointCount);
+	
 	mat4 snowman = identity_mat4();
 	snowman = translate(snowman, vec3(-40.0f, 0.0f, 0.0f));
 	snowman = translate(snowman, vec3(0.0f, 0.0f, forward_x));
@@ -442,7 +445,6 @@ void display(){
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
 
-	//glActiveTexture(GL_TEXTURE2);
 	glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
 	
 	mat4 arms = identity_mat4();
@@ -460,7 +462,6 @@ void display(){
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, arms.m);
 
-	glActiveTexture(GL_TEXTURE2);
 	glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
 
 	mat4 hat = identity_mat4();
@@ -478,9 +479,8 @@ void display(){
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat.m);
 
-	glActiveTexture(GL_TEXTURE2);
 	glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
-
+	
     glutSwapBuffers();
 }
 
@@ -627,10 +627,10 @@ void init()
 {
 	
 	// Set up the shaders
-	//snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/model_loading.vs","C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/model_loading.fs");
-	shaderProgramID = CompileShaders(shaderProgramID, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleVertexShader.txt", "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleFragmentShader.txt");
+	snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/snowVertexShader.txt","C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/snowFragmentShader.txt");
+	//snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/vs.txt", "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/fs.txt");
 
-	snowTexture = loadTexture("blue.png");
+	snowTexture = loadTexture("snow_1_1.jpg");
 
 	generateObjectBufferMesh();
 	
