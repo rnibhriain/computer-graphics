@@ -64,6 +64,7 @@ unsigned int hat_vp_vbo = 0;
 unsigned int hat_vn_vbo = 0;
 unsigned int hat_vt_vbo = 0;
 
+
 #pragma region SimpleTypes
 typedef struct
 {
@@ -353,6 +354,7 @@ void generateObjectBufferMesh() {
 	glGenBuffers(1, &hat_vt_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, hat_data.mPointCount * sizeof(vec2), &hat_data.mTextureCoords[0], GL_STATIC_DRAW);
+
 	
 }
 
@@ -396,7 +398,7 @@ void display(){
 
 	mat4 view = camera.GetViewMatrix();
 	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
-	mat4 model = identity_mat4();
+
 	view = translate(view, vec3(0.0f, -10.0f, -60.0f));
 
 	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
@@ -431,6 +433,7 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 1, plane_data.mPointCount);
 	
+	// draw snowman
 	mat4 snowman = identity_mat4();
 	snowman = translate(snowman, vec3(-40.0f, 0.0f, 0.0f));
 	snowman = translate(snowman, vec3(0.0f, 0.0f, forward_x));
@@ -446,11 +449,11 @@ void display(){
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
 
 	glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
-	
+
 	mat4 arms = identity_mat4();
 	arms = translate(arms, vec3(0.0f, forward_z, 0.0f));
 	arms = snowman * arms;
-	
+
 	glEnableVertexAttribArray(loc1);
 	glBindBuffer(GL_ARRAY_BUFFER, arms_vp_vbo);
 	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -467,7 +470,7 @@ void display(){
 	mat4 hat = identity_mat4();
 	hat = rotate_y_deg(hat, angle);
 	hat = snowman * hat;
-	
+
 	glEnableVertexAttribArray(loc1);
 	glBindBuffer(GL_ARRAY_BUFFER, hat_vp_vbo);
 	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -478,6 +481,56 @@ void display(){
 	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat.m);
+
+	glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
+
+	mat4 snowman1 = identity_mat4();
+	snowman1 = translate(snowman1, vec3(-25.0f, 0.0f, 0.0f));
+	snowman1 = translate(snowman1, vec3(0.0f, 0.0f, forward_x));
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman1.m);
+
+	glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
+
+	mat4 arms1 = identity_mat4();
+	arms1 = translate(arms1, vec3(0.0f, forward_z, 0.0f));
+	arms1 = snowman1 * arms1;
+
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, arms1.m);
+
+	glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
+
+	mat4 hat1 = identity_mat4();
+	hat1 = rotate_y_deg(hat1, angle);
+	hat1 = snowman1 * hat1;
+
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat1.m);
 
 	glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 	
@@ -628,7 +681,7 @@ void init()
 	
 	// Set up the shaders
 	snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/snowVertexShader.txt","C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/snowFragmentShader.txt");
-	//snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/vs.txt", "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/fs.txt");
+	//snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleVertexShader.txt", "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleFragmentShader.txt");
 
 	snowTexture = loadTexture("snow_1_1.jpg");
 
