@@ -11,6 +11,10 @@
 #include <string> 
 #include <fstream>
 #include <iostream>
+
+// loading textures
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include <sstream>
 
 // Assimp includes
@@ -19,10 +23,19 @@
 #include <assimp/postprocess.h> // various extra operations
 using namespace std;
 
+unsigned int snowTexture;
+
+// settings
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
+
 //typedef double DWORD;
 vec3 PosData(0.0f, 0.0f, 3.0f);
-
-Camera camera(PosData);
+// camera
+Camera camera(vec3(0.0f, 0.0f, 3.0f));
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
 
 /*----------------------------------------------------------------------------
 MESH TO LOAD
@@ -63,6 +76,7 @@ typedef struct
 
 using namespace std;
 GLuint shaderProgramID;
+GLuint snowShader ;
 
 ModelData mesh_data;
 ModelData plane_data;
@@ -198,12 +212,12 @@ static void AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum Shad
 	glAttachShader(ShaderProgram, ShaderObj);
 }
 
-GLuint CompileShaders()
+GLuint CompileShaders(GLuint shaderID, const char* vertexPath, const char* fragmentPath)
 {
 	//Start the process of setting up our shaders by creating a program ID
 	//Note: we will link all the shaders together into this ID
-	shaderProgramID = glCreateProgram();
-	if (shaderProgramID == 0) {
+	shaderID = glCreateProgram();
+	if (shaderID == 0) {
 		std::cerr << "Error creating shader program..." << std::endl;
 		std::cerr << "Press enter/return to exit..." << std::endl;
 		std::cin.get();
@@ -211,17 +225,17 @@ GLuint CompileShaders()
 	}
 
 	// Create two shader objects, one for the vertex, and one for the fragment shader
-	AddShader(shaderProgramID, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleVertexShader.txt", GL_VERTEX_SHADER);
-	AddShader(shaderProgramID, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleFragmentShader.txt", GL_FRAGMENT_SHADER);
+	AddShader(shaderID, vertexPath, GL_VERTEX_SHADER);
+	AddShader(shaderID, fragmentPath, GL_FRAGMENT_SHADER);
 
 	GLint Success = 0;
 	GLchar ErrorLog[1024] = { '\0' };
 	// After compiling all shader objects and attaching them to the program, we can finally link it
-	glLinkProgram(shaderProgramID);
+	glLinkProgram(shaderID);
 	// check for program related errors using glGetProgramiv
-	glGetProgramiv(shaderProgramID, GL_LINK_STATUS, &Success);
+	glGetProgramiv(shaderID, GL_LINK_STATUS, &Success);
 	if (Success == 0) {
-		glGetProgramInfoLog(shaderProgramID, sizeof(ErrorLog), NULL, ErrorLog);
+		glGetProgramInfoLog(shaderID, sizeof(ErrorLog), NULL, ErrorLog);
 		std::cerr << "Error linking shader program: " << ErrorLog << std::endl;
 		std::cerr << "Press enter/return to exit..." << std::endl;
 		std::cin.get();
@@ -229,11 +243,11 @@ GLuint CompileShaders()
 	}
 
 	// program has been successfully linked but needs to be validated to check whether the program can execute given the current pipeline state
-	glValidateProgram(shaderProgramID);
+	glValidateProgram(shaderID);
 	// check for program related errors using glGetProgramiv
-	glGetProgramiv(shaderProgramID, GL_VALIDATE_STATUS, &Success);
+	glGetProgramiv(shaderID, GL_VALIDATE_STATUS, &Success);
 	if (!Success) {
-		glGetProgramInfoLog(shaderProgramID, sizeof(ErrorLog), NULL, ErrorLog);
+		glGetProgramInfoLog(shaderID, sizeof(ErrorLog), NULL, ErrorLog);
 		std::cerr << "Invalid shader program: " << ErrorLog << std::endl;
 		std::cerr << "Press enter/return to exit..." << std::endl;
 		std::cin.get();
@@ -241,8 +255,8 @@ GLuint CompileShaders()
 	}
 	// Finally, use the linked shader program
 	// Note: this program will stay in effect for all draw calls until you replace it with another or explicitly disable its use
-	glUseProgram(shaderProgramID);
-	return shaderProgramID;
+	glUseProgram(shaderID);
+	return shaderID;
 }
 #pragma endregion SHADER_FUNCTIONS
 
@@ -277,12 +291,12 @@ void generateObjectBufferMesh() {
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vn_vbo);
 	glBufferData(GL_ARRAY_BUFFER, plane_data.mPointCount * sizeof(vec3), &plane_data.mNormals[0], GL_STATIC_DRAW);
 
-	/*
+	
 	plane_vt_vbo = 0;
 	glGenBuffers(1, &plane_vt_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, plane_data.mPointCount * sizeof(vec2), &plane_data.mTextureCoords[0], GL_STATIC_DRAW);
-	*/
+	
 	
 
 	snowman_vp_vbo = 0;
@@ -296,12 +310,12 @@ void generateObjectBufferMesh() {
 	glGenBuffers(1, &snowman_vn_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, snowman_vn_vbo);
 	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec3), &mesh_data.mNormals[0], GL_STATIC_DRAW);
-	/*
+	
 	snowman_vt_vbo = 0;
 	glGenBuffers(1, &snowman_vt_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, snowman_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec2), &mesh_data.mTextureCoords[0], GL_STATIC_DRAW);
-	*/
+	
 
 
 
@@ -316,12 +330,12 @@ void generateObjectBufferMesh() {
 	glGenBuffers(1, &arms_vn_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, arms_vn_vbo);
 	glBufferData(GL_ARRAY_BUFFER, arms_data.mPointCount * sizeof(vec3), &arms_data.mNormals[0], GL_STATIC_DRAW);
-	/*
+	
 	arms_vt_vbo = 0;
 	glGenBuffers(1, &arms_vt_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, arms_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, arms_data.mPointCount * sizeof(vec2), &arms_data.mTextureCoords[0], GL_STATIC_DRAW);
-	*/
+	
 
 	hat_vp_vbo = 0;
 	glGenBuffers(1, &hat_vp_vbo);
@@ -334,34 +348,12 @@ void generateObjectBufferMesh() {
 	glGenBuffers(1, &hat_vn_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, hat_vn_vbo);
 	glBufferData(GL_ARRAY_BUFFER, hat_data.mPointCount * sizeof(vec3), &hat_data.mNormals[0], GL_STATIC_DRAW);
+
+	hat_vt_vbo = 0;
+	glGenBuffers(1, &hat_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, hat_data.mPointCount * sizeof(vec2), &hat_data.mTextureCoords[0], GL_STATIC_DRAW);
 	
-}
-
-
-
-void generateObjectBufferTeapot () {
-	GLuint vp_vbo = 0;
-
-	loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
-	loc2 = glGetAttribLocation(shaderProgramID, "vertex_normals");
-	
-	glGenBuffers (1, &vp_vbo);
-	glBindBuffer (GL_ARRAY_BUFFER, vp_vbo);
-	glBufferData (GL_ARRAY_BUFFER, 3 * teapot_vertex_count * sizeof (float), teapot_vertex_points, GL_STATIC_DRAW);
-	GLuint vn_vbo = 0;
-	glGenBuffers (1, &vn_vbo);
-	glBindBuffer (GL_ARRAY_BUFFER, vn_vbo);
-	glBufferData (GL_ARRAY_BUFFER, 3 * teapot_vertex_count * sizeof (float), teapot_normals, GL_STATIC_DRAW);
-  
-	glGenVertexArrays (1, &teapot_vao);
-	glBindVertexArray (teapot_vao);
-
-	glEnableVertexAttribArray (loc1);
-	glBindBuffer (GL_ARRAY_BUFFER, vp_vbo);
-	glVertexAttribPointer (loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray (loc2);
-	glBindBuffer (GL_ARRAY_BUFFER, vn_vbo);
-	glVertexAttribPointer (loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 }
 
 
@@ -389,7 +381,9 @@ void display(){
 	glClearColor (0.5f, 0.5f, 0.5f, 1.0f);
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram (shaderProgramID);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	vec3 value = camera.Position;
+	std::string name = "viewPos";
+	glUniform3f(glGetUniformLocation(shaderProgramID,name.c_str()), value.v[0], value.v[1], value.v[2]);
 
 	//Declare your uniform variables that will be used in your shader
 	int matrix_location = glGetUniformLocation (shaderProgramID, "model");
@@ -411,7 +405,7 @@ void display(){
 
 
 	mat4 Plane = identity_mat4();
-	Plane = translate(Plane, vec3(0.0f, 0.0f, 0.0f));
+	Plane = translate(Plane, vec3(5.0f, 0.0f, 0.0f));
 	glEnableVertexAttribArray(loc1);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vp_vbo);
 	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -422,11 +416,17 @@ void display(){
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
+
+	glEnable(GL_TEXTURE_2D);
+	glGenTextures(1, &snowTexture);
+	glBindTexture(GL_TEXTURE_2D, snowTexture);
+
 	glActiveTexture(GL_TEXTURE1);
 
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
-	// update uniforms & draw
-	glDrawArrays(GL_TRIANGLES, 1, plane_data.mPointCount);
+	glBindTexture(GL_TEXTURE_2D, snowTexture);
+
+	glDrawArrays(GL_TRIANGLES, 0, plane_data.mPointCount);
 
 	mat4 snowman = identity_mat4();
 	snowman = translate(snowman, vec3(-40.0f, 0.0f, 0.0f));
@@ -442,7 +442,7 @@ void display(){
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
 
-	glActiveTexture(GL_TEXTURE2);
+	//glActiveTexture(GL_TEXTURE2);
 	glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
 	
 	mat4 arms = identity_mat4();
@@ -488,6 +488,7 @@ void display(){
 bool start = false;
 float x = 3.0f;
 float y = 3.0f;
+float  delta = 0;
 
 void updateScene() {	
 
@@ -516,11 +517,9 @@ void updateScene() {
 	glutPostRedisplay();
 }
 
-
 //keyboard event handler
 void keyboard(unsigned char key, int x, int y)
 {
-	const float cameraSpeed = 0.05f;
 	if (key == 'w') {
 		camera.ProcessKeyboard(FORWARD, 0.5);
 	}
@@ -537,8 +536,6 @@ void keyboard(unsigned char key, int x, int y)
 		start = !start;
 	}
 }
-float lastX = width / 2.0f;
-float lastY = height / 2.0f;
 int startX, startY, tracking = 0;
 
 void processSelection(int xx, int yy) {
@@ -559,29 +556,81 @@ void mouse(int button, int state, int x, int y)
 		startY = y;
 		processSelection(x, y);
 	}
+	if (button == 4) {
+		camera.ProcessMouseScroll(1.0f);
+	}
+	if (button == 3) {
+		camera.ProcessMouseScroll(-1.0f);
+	}
 }
 
-void mouseCallback(int x, int y) {
-	/**if (firstMouse) {
-		lastX = x;
-		lastY = y;
+
+
+void mouseCallback(int xposIn, int yposIn) {
+	float xpos = static_cast<float>(xposIn);
+	float ypos = static_cast<float>(yposIn);
+
+	if (firstMouse)
+	{
+		lastX = xpos;
+		lastY = ypos;
 		firstMouse = false;
-	}*/
+	}
 
-	float xoffset = x - lastX;
-	float yoffset = lastY - y; // reversed since y-coordinates go from bottom to top
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
 
-	lastX = x;
-	lastY = y;
+	lastX = xpos;
+	lastY = ypos;
 
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
+
+unsigned int loadTexture(char const* path) {
+	unsigned int textureID = 0;
+	glGenTextures(1, &textureID);
+
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
+	
+
+	if (data)
+	{
+		GLenum format;
+		if (nrChannels == 1)
+			format = GL_RED;
+		else if (nrChannels == 3)
+			format = GL_RGB;
+		else if (nrChannels == 4)
+			format = GL_RGBA;
+
+		
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+	}
+	stbi_image_free(data);
+	return textureID;
+}
+
 
 void init()
 {
 	
 	// Set up the shaders
-	GLuint shaderProgramID = CompileShaders();
+	//snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/model_loading.vs","C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/model_loading.fs");
+	shaderProgramID = CompileShaders(shaderProgramID, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleVertexShader.txt", "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleFragmentShader.txt");
+
+	snowTexture = loadTexture("blue.png");
 
 	generateObjectBufferMesh();
 	
@@ -615,14 +664,3 @@ int main(int argc, char** argv){
 	glutMainLoop();
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
