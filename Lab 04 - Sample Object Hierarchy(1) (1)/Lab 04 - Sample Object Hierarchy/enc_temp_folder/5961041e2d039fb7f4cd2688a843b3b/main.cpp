@@ -296,7 +296,7 @@ void generateObjectBufferMesh() {
 	plane_vt_vbo = 0;
 	glGenBuffers(1, &plane_vt_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
-	glBufferData(GL_ARRAY_BUFFER, plane_data.mPointCount * sizeof(vec2), &plane_data.mTextureCoords[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, plane_data.mPointCount * sizeof(vec2), &plane_data.mTextureCoords[1], GL_STATIC_DRAW);
 	
 
 	snowman_vp_vbo = 0;
