@@ -70,7 +70,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\libs\assimp\include;$(SolutionDir)\libs\glew-1.10.0\include;$(SolutionDir)\libs\freeglut\include;C:\Users\User\Downloads\Lab 04 - Sample Object Hierarchy(1) (1)\Lab 04 - Sample Object Hierarchy\libs\glm-0.9.9.7\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

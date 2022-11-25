@@ -317,8 +317,6 @@ void generateObjectBufferMesh() {
 	glBufferData(GL_ARRAY_BUFFER, mesh_data.mPointCount * sizeof(vec2), &mesh_data.mTextureCoords[0], GL_STATIC_DRAW);
 	
 
-
-
 	arms_vp_vbo = 0;
 	glGenBuffers(1, &arms_vp_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, arms_vp_vbo);
@@ -372,7 +370,7 @@ const float radius = 10.0f;
 GLfloat forward_x = 0;
 GLfloat forward_z = 0;
 GLfloat angle = 0;
-float rotate_x = 0;
+float rotate_x = 1;
 
 void display(){
 
@@ -383,8 +381,6 @@ void display(){
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram (snowShader);
 	vec3 value = camera.Position;
-	std::string name = "viewPos";
-	glUniform3f(glGetUniformLocation(shaderProgramID,name.c_str()), value.v[0], value.v[1], value.v[2]);
 
 	//Declare your uniform variables that will be used in your shader
 	int matrix_location = glGetUniformLocation (snowShader, "model");
@@ -403,7 +399,6 @@ void display(){
 	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
 	glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view.m);
 
-
 	mat4 Plane = identity_mat4();
 	glEnableVertexAttribArray(loc1);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vp_vbo);
@@ -421,9 +416,7 @@ void display(){
 
 	glBindTexture(GL_TEXTURE_2D, snowTexture);
 
-	glDrawArrays(GL_TRIANGLES, 1, plane_data.mPointCount);
-	
-
+	glDrawArrays(GL_TRIANGLES, 0, plane_data.mPointCount);
 
 	for (int i = 0; i < 6; i++) {
 		mat4 snowman = identity_mat4();
@@ -444,6 +437,7 @@ void display(){
 
 		mat4 arms = identity_mat4();
 		arms = translate(arms, vec3(0.0f, forward_z, 0.0f));
+		arms = rotate_z_deg(arms, rotate_x);
 		arms = snowman * arms;
 
 		glEnableVertexAttribArray(loc1);
@@ -459,9 +453,9 @@ void display(){
 
 		glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
 
-		mat4 hat1 = identity_mat4();
-		hat1 = rotate_y_deg(hat1, angle);
-		hat1 = snowman * hat1;
+		mat4 hat = identity_mat4();
+		hat = rotate_y_deg(hat, angle);
+		hat = snowman * hat;
 
 		glEnableVertexAttribArray(loc1);
 		glBindBuffer(GL_ARRAY_BUFFER, hat_vp_vbo);
@@ -472,7 +466,7 @@ void display(){
 		glEnableVertexAttribArray(loc3);
 		glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
 		glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-		glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat1.m);
+		glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat.m);
 
 		glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 	}
@@ -484,6 +478,7 @@ void display(){
 bool start = false;
 float x = 3.0f;
 float y = 3.0f;
+float z = 10.0f;
 float  delta = 0;
 
 void updateScene() {	
@@ -501,12 +496,17 @@ void updateScene() {
 		if (forward_z > 0.5f || forward_z < -0.5f) {
 			x = -x;
 		}
-		forward_z += x * delta;
+		if (rotate_x > 3 || rotate_x < -3) {
+			z = -z;
+		}
+		//forward_z += x * delta;
+		rotate_x += z * delta;
 		if (forward_x > 40.0f || forward_x < -40.f) {
 			y = -y;
 		}
 		forward_x += y * delta;
 		angle += 1.0f;
+		//rotate_x += 1.0f;
 	}
 	
 	// Draw the next framew
@@ -561,7 +561,6 @@ void mouse(int button, int state, int x, int y)
 }
 
 
-
 void mouseCallback(int xposIn, int yposIn) {
 	float xpos = static_cast<float>(xposIn);
 	float ypos = static_cast<float>(yposIn);
@@ -586,6 +585,13 @@ unsigned int loadTexture(char const* path) {
 	unsigned int textureID = 0;
 	glGenTextures(1, &textureID);
 
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
 	
@@ -599,16 +605,10 @@ unsigned int loadTexture(char const* path) {
 			format = GL_RGB;
 		else if (nrChannels == 4)
 			format = GL_RGBA;
-
 		
-		glBindTexture(GL_TEXTURE_2D, textureID);
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
 	{
@@ -623,11 +623,12 @@ void init()
 {
 	
 	// Set up the shaders
-	snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/snowVertexShader.txt","C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/snowFragmentShader.txt");
-	//snowShader = CompileShaders(snowShader, "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleVertexShader.txt", "C:/Users/User/Documents/computer-graphics/Lab 04 - Sample Object Hierarchy(1) (1)/Lab 04 - Sample Object Hierarchy/Shaders/simpleFragmentShader.txt");
+	//snowShader = CompileShaders(snowShader, "Shaders/vs.txt","Shaders/fs.txt");
+	snowShader = CompileShaders(snowShader, "Shaders/simpleVertexShader.txt", "Shaders/simpleFragmentShader.txt");
+	//snowShader = CompileShaders(snowShader, "Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
+
 
 	snowTexture = loadTexture("snow_1_1.jpg");
-
 	generateObjectBufferMesh();
 	
 }
@@ -638,7 +639,7 @@ int main(int argc, char** argv){
 	glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
     glutInitWindowSize(width, height);
-    glutCreateWindow("Viewport Teapots");
+    glutCreateWindow("Winter Wonderland");
 	// Tell glut where the display function is
 	glutDisplayFunc(display);
 	glutIdleFunc(updateScene);

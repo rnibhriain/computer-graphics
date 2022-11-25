@@ -70,11 +70,6 @@ uniform vec3 objectColor;
 
 out vec4 fragment_colour;
 
-// function prototypes
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-
 void main(){
 	// properties
     vec3 norm = normalize(Normal);
@@ -85,9 +80,5 @@ void main(){
         discard;
 
     
-    gl_FragColor = texColor * vec4(LightIntensity, 1.0);
+    fragment_colour = texColor * vec4(LightIntensity, 1.0);
 }
-
-
-
-
