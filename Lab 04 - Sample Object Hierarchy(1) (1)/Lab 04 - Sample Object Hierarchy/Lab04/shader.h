@@ -1,16 +1,9 @@
 #ifndef SHADER_H
 #define SHADER_H
-
-#include <glm/glm.hpp>
-
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-
 class Shader
 {
 public:
+    Shader::Shader() {};
     unsigned int ID;
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------

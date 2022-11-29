@@ -17,12 +17,10 @@
 #include "stb_image.h"
 #include <sstream>
 
-// Assimp includes
-#include <assimp/cimport.h> // scene importer
-#include <assimp/scene.h> // collects data
-#include <assimp/postprocess.h> // various extra operations
-
 #include "model.h"
+#include "shader.h"
+
+Shader planeShader;
 
 using namespace std;
 
@@ -110,19 +108,9 @@ unsigned int hat_vn_vbo = 0;
 unsigned int hat_vt_vbo = 0;
 
 
-#pragma region SimpleTypes
-typedef struct
-{
-	size_t mPointCount = 0;
-	std::vector<vec3> mVertices;
-	std::vector<vec3> mNormals;
-	std::vector<vec2> mTextureCoords;
-} ModelData;
-#pragma endregion SimpleTypes
-
 using namespace std;
 GLuint shaderProgramID;
-GLuint snowShader ;
+GLuint snowShader;
 
 ModelData mesh_data;
 ModelData plane_data;
@@ -205,110 +193,6 @@ ModelData load_mesh(const char* file_name) {
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
-// Shader Functions- click on + to expand
-#pragma region SHADER_FUNCTIONS
-
-char* readShaderSource(const char* shaderFile) {
-	FILE* fp;
-	fopen_s(&fp, shaderFile, "rb");
-
-	if (fp == NULL) { return NULL; }
-
-	fseek(fp, 0L, SEEK_END);
-	long size = ftell(fp);
-
-	fseek(fp, 0L, SEEK_SET);
-	char* buf = new char[size + 1];
-	fread(buf, 1, size, fp);
-	buf[size] = '\0';
-
-	fclose(fp);
-
-	return buf;
-}
-
-
-static void AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType)
-{
-	// create a shader object
-	GLuint ShaderObj = glCreateShader(ShaderType);
-
-	if (ShaderObj == 0) {
-		std::cerr << "Error creating shader..." << std::endl;
-		std::cerr << "Press enter/return to exit..." << std::endl;
-		std::cin.get();
-		exit(1);
-	}
-	const char* pShaderSource = readShaderSource(pShaderText);
-
-	// Bind the source code to the shader, this happens before compilation
-	glShaderSource(ShaderObj, 1, (const GLchar**)&pShaderSource, NULL);
-	// compile the shader and check for errors
-	glCompileShader(ShaderObj);
-	GLint success;
-	// check for shader related errors using glGetShaderiv
-	glGetShaderiv(ShaderObj, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		GLchar InfoLog[1024] = { '\0' };
-		glGetShaderInfoLog(ShaderObj, 1024, NULL, InfoLog);
-		std::cerr << "Error compiling "
-			<< (ShaderType == GL_VERTEX_SHADER ? "vertex" : "fragment")
-			<< " shader program: " << InfoLog << std::endl;
-		std::cerr << "Press enter/return to exit..." << std::endl;
-		std::cin.get();
-		exit(1);
-	}
-	// Attach the compiled shader object to the program object
-	glAttachShader(ShaderProgram, ShaderObj);
-}
-
-GLuint CompileShaders(GLuint shaderID, const char* vertexPath, const char* fragmentPath)
-{
-	//Start the process of setting up our shaders by creating a program ID
-	//Note: we will link all the shaders together into this ID
-	shaderID = glCreateProgram();
-	if (shaderID == 0) {
-		std::cerr << "Error creating shader program..." << std::endl;
-		std::cerr << "Press enter/return to exit..." << std::endl;
-		std::cin.get();
-		exit(1);
-	}
-
-	// Create two shader objects, one for the vertex, and one for the fragment shader
-	AddShader(shaderID, vertexPath, GL_VERTEX_SHADER);
-	AddShader(shaderID, fragmentPath, GL_FRAGMENT_SHADER);
-
-	GLint Success = 0;
-	GLchar ErrorLog[1024] = { '\0' };
-	// After compiling all shader objects and attaching them to the program, we can finally link it
-	glLinkProgram(shaderID);
-	// check for program related errors using glGetProgramiv
-	glGetProgramiv(shaderID, GL_LINK_STATUS, &Success);
-	if (Success == 0) {
-		glGetProgramInfoLog(shaderID, sizeof(ErrorLog), NULL, ErrorLog);
-		std::cerr << "Error linking shader program: " << ErrorLog << std::endl;
-		std::cerr << "Press enter/return to exit..." << std::endl;
-		std::cin.get();
-		exit(1);
-	}
-
-	// program has been successfully linked but needs to be validated to check whether the program can execute given the current pipeline state
-	glValidateProgram(shaderID);
-	// check for program related errors using glGetProgramiv
-	glGetProgramiv(shaderID, GL_VALIDATE_STATUS, &Success);
-	if (!Success) {
-		glGetProgramInfoLog(shaderID, sizeof(ErrorLog), NULL, ErrorLog);
-		std::cerr << "Invalid shader program: " << ErrorLog << std::endl;
-		std::cerr << "Press enter/return to exit..." << std::endl;
-		std::cin.get();
-		exit(1);
-	}
-	// Finally, use the linked shader program
-	// Note: this program will stay in effect for all draw calls until you replace it with another or explicitly disable its use
-	glUseProgram(shaderID);
-	return shaderID;
-}
-#pragma endregion SHADER_FUNCTIONS
 
 GLuint loc1, loc2, loc3;
 
@@ -323,7 +207,9 @@ void generateObjectBufferMesh() {
 	//Note: you may get an error "vector subscript out of range" if you are using this code for a mesh that doesnt have positions and normals
 	//Might be an idea to do a check for that before generating and binding the buffer.
 
-	mesh_data = load_mesh(MESH_BODY);
+	Mesh planeLoader = Mesh();
+
+	mesh_data = planeLoader.load_mesh(MESH_BODY);
 
 	arms_data = load_mesh(MESH_ARMS);
 
@@ -430,32 +316,32 @@ void display(){
 	glDepthFunc (GL_LESS); // depth-testing interprets a smaller value as "closer"
 	glClearColor (0.0f, 0.0f, 1.0f, 1.0f);
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(snowShader);
+	glUseProgram(planeShader.ID);
 	vec3 value = camera.Position;
 
 	//Declare your uniform variables that will be used in your shader
-	int matrix_location = glGetUniformLocation (snowShader, "model");
-	int view_mat_location = glGetUniformLocation (snowShader, "view");
-	int proj_mat_location = glGetUniformLocation (snowShader, "proj");
+	int matrix_location = glGetUniformLocation (planeShader.ID, "model");
+	int view_mat_location = glGetUniformLocation (planeShader.ID, "view");
+	int proj_mat_location = glGetUniformLocation (planeShader.ID, "proj");
 
-	loc1 = glGetAttribLocation(snowShader, "vertex_position");
-	loc2 = glGetAttribLocation(snowShader, "vertex_normal");
-	loc3 = glGetAttribLocation(snowShader, "vertex_texture");
+	loc1 = glGetAttribLocation(planeShader.ID, "vertex_position");
+	loc2 = glGetAttribLocation(planeShader.ID, "vertex_normal");
+	loc3 = glGetAttribLocation(planeShader.ID, "vertex_texture");
 	
-	glBindFragDataLocation(snowShader, 0, "fragment_colour");
+	glBindFragDataLocation(planeShader.ID, 0, "fragment_colour");
 
 	// Specify the layout of the vertex data
-	GLint posAttrib = glGetAttribLocation(snowShader, "vertex_position");
+	/*GLint posAttrib = glGetAttribLocation(planeShader.ID, "vertex_position");
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), 0);
 
-	GLint colAttrib = glGetAttribLocation(snowShader, "vertex_normal");
+	GLint colAttrib = glGetAttribLocation(planeShader.ID, "vertex_normal");
 	glEnableVertexAttribArray(colAttrib);
 	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 
-	GLint texAttrib = glGetAttribLocation(snowShader, "vertex_texture");
+	GLint texAttrib = glGetAttribLocation(planeShader.ID, "vertex_texture");
 	glEnableVertexAttribArray(texAttrib);
-	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));*/
 
 	mat4 view = camera.GetViewMatrix();
 	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
@@ -464,6 +350,12 @@ void display(){
 
 	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
 	glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view.m);
+
+
+	planeShader.setVec3("material.ambient", 1.0f, 1.0f, 1.0f);
+	planeShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f); // specular lighting doesn't have full effect on this object's material
+	planeShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f); // specular lighting doesn't have full effect on this object's material
+	planeShader.setFloat("material.shininess", 32.0f);
 
 	mat4 Plane = identity_mat4();
 	Plane = translate(Plane, vec3(5.0f, 0.0f, 0.0f));
@@ -658,9 +550,9 @@ void init()
 	
 	// Set up the shaders
 	//snowShader = CompileShaders(snowShader, "Shaders/vs.txt","Shaders/fs.txt");
-	snowShader = CompileShaders(snowShader, "Shaders/simpleVertexShader.txt", "Shaders/simpleFragmentShader.txt");
+	//snowShader = CompileShaders(snowShader, "Shaders/simpleVertexShader.txt", "Shaders/simpleFragmentShader.txt");
 	//snowShader = CompileShaders(snowShader, "Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
-
+	planeShader = Shader("Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
 
 	snowTexture = loadTexture("snow_1_1.jpg");
 	generateObjectBufferMesh();

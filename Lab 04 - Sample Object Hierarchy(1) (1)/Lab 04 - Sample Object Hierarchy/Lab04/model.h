@@ -9,7 +9,6 @@
 #include <assimp/postprocess.h>
 
 #include "mesh.h"
-#include "shader.h"
 
 #include <string>
 #include <fstream>
@@ -21,12 +20,14 @@ using namespace std;
 
 unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false);
 
+
+
 class Model 
 {
 public:
     // model data 
     vector<Texture> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
-    vector <Mesh>    meshes;
+    vector<Mesh>    meshes;
     string directory;
     bool gammaCorrection;
 
