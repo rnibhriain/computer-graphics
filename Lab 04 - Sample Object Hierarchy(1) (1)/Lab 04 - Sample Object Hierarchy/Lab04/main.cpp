@@ -307,7 +307,17 @@ GLfloat forward_z = 0;
 GLfloat angle = 0;
 float rotate_x = 1;
 
+float ambient = 0.5f;
+float diffuse = 0.4f;
+float spec = 1.0f;
+
 unsigned int VAO;
+
+vec3 lightPositions[] = {
+	vec3(0.0f, 8.0f, -15.0f),
+	vec3(15.0f, 6.0f, 10.0f),
+	vec3(-10.0f, 3.0f, -5.0f)
+};
 
 void display(){
 
@@ -328,7 +338,7 @@ void display(){
 	loc2 = glGetAttribLocation(planeShader.ID, "vertex_normal");
 	loc3 = glGetAttribLocation(planeShader.ID, "vertex_texture");
 	
-	glBindFragDataLocation(planeShader.ID, 0, "fragment_colour");
+	glBindFragDataLocation(planeShader.ID, 1, "fragment_colour");
 
 	// Specify the layout of the vertex data
 	/*GLint posAttrib = glGetAttribLocation(planeShader.ID, "vertex_position");
@@ -345,17 +355,51 @@ void display(){
 
 	mat4 view = camera.GetViewMatrix();
 	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
-
+	mat4 model = identity_mat4();
 	view = translate(view, vec3(0.0f, 0.0f, -60.0f));
 
 	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
 	glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view.m);
 
+	planeShader.setVec3("dirLight.direction", vec3 (-0.2f, -1.0f, -0.3f));
+	planeShader.setVec3("dirLight.ambient", vec3(0.005f, 0.005f, 0.005f));
+	planeShader.setVec3("dirLight.diffuse", vec3(0.05f, 0.05f, 0.05f));
+	planeShader.setVec3("dirLight.specular", vec3(0.05f, 0.05f, 0.05f));
 
-	planeShader.setVec3("material.ambient", 1.0f, 1.0f, 1.0f);
-	planeShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f); // specular lighting doesn't have full effect on this object's material
-	planeShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f); // specular lighting doesn't have full effect on this object's material
+
+	planeShader.setVec3("pointLights[0].position", lightPositions[0]);
+	planeShader.setVec3("pointLights[0].ambient", vec3(ambient, ambient, ambient));
+	planeShader.setVec3("pointLights[0].diffuse", vec3(diffuse, diffuse, diffuse));
+	planeShader.setVec3("pointLights[0].specular", vec3(spec, spec, spec));
+	planeShader.setFloat("pointLights[0].constant", 1.0f);
+	planeShader.setFloat("pointLights[0].linear", 0.07);
+	planeShader.setFloat("pointLights[0].quadratic", 0.012);
+
+
+	planeShader.setVec3("pointLights[1].position", lightPositions[1]);
+	planeShader.setVec3("pointLights[1].ambient", vec3(ambient, ambient, ambient));
+	planeShader.setVec3("pointLights[1].diffuse", vec3(diffuse, diffuse, diffuse));
+	planeShader.setVec3("pointLights[1].specular", vec3(spec, spec, spec));
+	planeShader.setFloat("pointLights[1].constant", 1.0f);
+	planeShader.setFloat("pointLights[1].linear", 0.014);
+	planeShader.setFloat("pointLights[1].quadratic", 0.002);
+
+
+
+	planeShader.setVec3("pointLights[2].position", lightPositions[2]);
+	planeShader.setVec3("pointLights[2].ambient", vec3(ambient, ambient, ambient));
+	planeShader.setVec3("pointLights[2].diffuse", vec3(diffuse, diffuse, diffuse));
+	planeShader.setVec3("pointLights[2].specular", vec3(spec, spec, spec));
+	planeShader.setFloat("pointLights[2].constant", 1.0f);
+	planeShader.setFloat("pointLights[2].linear", 0.014);
+	planeShader.setFloat("pointLights[2].quadratic", 0.0002);
+	
+
+	planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
+	planeShader.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f)); // specular lighting doesn't have full effect on this object's material
+	planeShader.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f)); // specular lighting doesn't have full effect on this object's material
 	planeShader.setFloat("material.shininess", 32.0f);
+
 
 	mat4 Plane = identity_mat4();
 	Plane = translate(Plane, vec3(5.0f, 0.0f, 0.0f));
@@ -368,15 +412,15 @@ void display(){
 	glEnableVertexAttribArray(loc3);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
 
-	glEnable(GL_TEXTURE_2D);
 
 	glActiveTexture(GL_TEXTURE1);	
 
-	glBindTexture(GL_TEXTURE_2D, snowTexture);
+	planeShader.setInt("material.diffuse", 1);
 
-	//glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(plane_data.mPointCount), GL_UNSIGNED_INT, 0);
+	glBindTexture(GL_TEXTURE_2D, snowTexture);
 
 	glDrawArrays(GL_TRIANGLES, 1, plane_data.mPointCount);
 
