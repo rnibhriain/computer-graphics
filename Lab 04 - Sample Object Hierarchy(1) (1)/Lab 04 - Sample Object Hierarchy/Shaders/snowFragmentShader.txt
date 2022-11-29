@@ -76,8 +76,8 @@ void main(){
     vec3 viewDir = normalize(viewPos - FragPos);
 
 	vec4 texColor = texture(material.diffuse, TexCoord);
-    if(texColor.a < 0.1)
-        discard;
+    //if(texColor.a < 0.1)
+      //  discard;
 
     
     fragment_colour = texColor * vec4(LightIntensity, 1.0);

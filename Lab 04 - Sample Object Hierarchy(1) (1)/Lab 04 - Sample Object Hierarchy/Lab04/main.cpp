@@ -21,6 +21,9 @@
 #include <assimp/cimport.h> // scene importer
 #include <assimp/scene.h> // collects data
 #include <assimp/postprocess.h> // various extra operations
+
+#include "model.h"
+
 using namespace std;
 
 unsigned int snowTexture;
@@ -29,13 +32,55 @@ unsigned int snowTexture;
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-//typedef double DWORD;
-vec3 PosData(0.0f, 0.0f, 3.0f);
+string directory;
+
+vector<Texture> textures;
+
 // camera
 Camera camera(vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
+
+unsigned int loadTexture(char const* path) {
+	unsigned int textureID = 0;
+	glGenTextures(1, &textureID);
+
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
+
+
+	if (data)
+	{
+		GLenum format;
+		if (nrChannels == 1)
+			format = GL_RED;
+		else if (nrChannels == 3)
+			format = GL_RGB;
+		else if (nrChannels == 4)
+			format = GL_RGBA;
+
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		std::cout << "Texture loaded\n";
+
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+	}
+	stbi_image_free(data);
+	return textureID;
+}
+
 
 /*----------------------------------------------------------------------------
 MESH TO LOAD
@@ -45,7 +90,7 @@ MESH TO LOAD
 #define MESH_BODY "snowman.dae"
 #define MESH_ARMS "snowmanArms.dae"
 #define MESH_HAT "snowmanHat.dae"
-#define PLANE_MESH "snow.dae"
+#define PLANE_MESH "snow.obj"
 /*----------------------------------------------------------------------------
 ----------------------------------------------------------------------------*/
 unsigned int plane_vp_vbo = 0;
@@ -120,6 +165,7 @@ ModelData load_mesh(const char* file_name) {
 	printf("  %i meshes\n", scene->mNumMeshes);
 	printf("  %i textures\n", scene->mNumTextures);
 
+
 	for (unsigned int m_i = 0; m_i < scene->mNumMeshes; m_i++) {
 		const aiMesh* mesh = scene->mMeshes[m_i];
 		printf("    %i vertices in mesh\n", mesh->mNumVertices);
@@ -145,10 +191,13 @@ ModelData load_mesh(const char* file_name) {
 			}
 		}
 	}
+	aiMaterial* material = scene->mMaterials[scene->mMeshes[0]->mMaterialIndex];
 
 	aiReleaseImport(scene);
 	return modelData;
 }
+
+
 
 #pragma endregion MESH LOADING
 
@@ -372,14 +421,16 @@ GLfloat forward_z = 0;
 GLfloat angle = 0;
 float rotate_x = 1;
 
+unsigned int VAO;
+
 void display(){
 
 	// tell GL to only draw onto a pixel if the shape is closer to the viewer
 	glEnable (GL_DEPTH_TEST); // enable depth-testing
 	glDepthFunc (GL_LESS); // depth-testing interprets a smaller value as "closer"
-	glClearColor (0.0f, 0.5f, 0.5f, 1.0f);
+	glClearColor (0.0f, 0.0f, 1.0f, 1.0f);
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram (snowShader);
+	glUseProgram(snowShader);
 	vec3 value = camera.Position;
 
 	//Declare your uniform variables that will be used in your shader
@@ -390,16 +441,32 @@ void display(){
 	loc1 = glGetAttribLocation(snowShader, "vertex_position");
 	loc2 = glGetAttribLocation(snowShader, "vertex_normal");
 	loc3 = glGetAttribLocation(snowShader, "vertex_texture");
+	
+	glBindFragDataLocation(snowShader, 0, "fragment_colour");
+
+	// Specify the layout of the vertex data
+	GLint posAttrib = glGetAttribLocation(snowShader, "vertex_position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), 0);
+
+	GLint colAttrib = glGetAttribLocation(snowShader, "vertex_normal");
+	glEnableVertexAttribArray(colAttrib);
+	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+
+	GLint texAttrib = glGetAttribLocation(snowShader, "vertex_texture");
+	glEnableVertexAttribArray(texAttrib);
+	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
 
 	mat4 view = camera.GetViewMatrix();
 	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
 
-	view = translate(view, vec3(0.0f, -10.0f, -60.0f));
+	view = translate(view, vec3(0.0f, 0.0f, -60.0f));
 
 	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
 	glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view.m);
 
 	mat4 Plane = identity_mat4();
+	Plane = translate(Plane, vec3(5.0f, 0.0f, 0.0f));
 	glEnableVertexAttribArray(loc1);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vp_vbo);
 	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -409,14 +476,19 @@ void display(){
 	glEnableVertexAttribArray(loc3);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
 
-	glActiveTexture(GL_TEXTURE1);
+	glEnable(GL_TEXTURE_2D);
+
+	glActiveTexture(GL_TEXTURE1);	
 
 	glBindTexture(GL_TEXTURE_2D, snowTexture);
 
-	glDrawArrays(GL_TRIANGLES, 0, plane_data.mPointCount);
+	//glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(plane_data.mPointCount), GL_UNSIGNED_INT, 0);
+
+	glDrawArrays(GL_TRIANGLES, 1, plane_data.mPointCount);
+
+	glActiveTexture(GL_TEXTURE0);
 
 	for (int i = 0; i < 6; i++) {
 		mat4 snowman = identity_mat4();
@@ -496,7 +568,7 @@ void updateScene() {
 		if (forward_z > 0.5f || forward_z < -0.5f) {
 			x = -x;
 		}
-		if (rotate_x > 3 || rotate_x < -3) {
+		if (rotate_x > 4 || rotate_x < -4) {
 			z = -z;
 		}
 		//forward_z += x * delta;
@@ -580,44 +652,6 @@ void mouseCallback(int xposIn, int yposIn) {
 
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
-
-unsigned int loadTexture(char const* path) {
-	unsigned int textureID = 0;
-	glGenTextures(1, &textureID);
-
-	glBindTexture(GL_TEXTURE_2D, textureID);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
-	
-
-	if (data)
-	{
-		GLenum format;
-		if (nrChannels == 1)
-			format = GL_RED;
-		else if (nrChannels == 3)
-			format = GL_RGB;
-		else if (nrChannels == 4)
-			format = GL_RGBA;
-		
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-	}
-	stbi_image_free(data);
-	return textureID;
-}
-
 
 void init()
 {
