@@ -19,12 +19,20 @@
 
 #include "model.h"
 #include "shader.h"
+#include "skybox.h"
 
 Shader planeShader;
+Shader skyboxShader;
+
+Skybox skybox;
 
 using namespace std;
 
 unsigned int snowTexture;
+unsigned int snowManTexture;
+unsigned int woodTexture;
+unsigned int hatTexture;
+unsigned int skyTexture;
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -286,8 +294,9 @@ void generateObjectBufferMesh() {
 	glGenBuffers(1, &hat_vt_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, hat_data.mPointCount * sizeof(vec2), &hat_data.mTextureCoords[0], GL_STATIC_DRAW);
-
 	
+
+	skybox.GenObjectBuffer(skyboxShader);
 }
 
 
@@ -334,24 +343,12 @@ void display(){
 	int view_mat_location = glGetUniformLocation (planeShader.ID, "view");
 	int proj_mat_location = glGetUniformLocation (planeShader.ID, "proj");
 
+	//mat4 projection = perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 	loc1 = glGetAttribLocation(planeShader.ID, "vertex_position");
 	loc2 = glGetAttribLocation(planeShader.ID, "vertex_normal");
 	loc3 = glGetAttribLocation(planeShader.ID, "vertex_texture");
 	
 	glBindFragDataLocation(planeShader.ID, 1, "fragment_colour");
-
-	// Specify the layout of the vertex data
-	/*GLint posAttrib = glGetAttribLocation(planeShader.ID, "vertex_position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), 0);
-
-	GLint colAttrib = glGetAttribLocation(planeShader.ID, "vertex_normal");
-	glEnableVertexAttribArray(colAttrib);
-	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
-
-	GLint texAttrib = glGetAttribLocation(planeShader.ID, "vertex_texture");
-	glEnableVertexAttribArray(texAttrib);
-	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));*/
 
 	mat4 view = camera.GetViewMatrix();
 	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
@@ -415,20 +412,17 @@ void display(){
 
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Plane.m);
 
-
-	glActiveTexture(GL_TEXTURE1);	
-
-	planeShader.setInt("material.diffuse", 1);
-
-	glBindTexture(GL_TEXTURE_2D, snowTexture);
-
-	glDrawArrays(GL_TRIANGLES, 1, plane_data.mPointCount);
+	glEnable(GL_TEXTURE_2D);
 
 	glActiveTexture(GL_TEXTURE0);
 
-	for (int i = 0; i < 6; i++) {
+	glBindTexture(GL_TEXTURE_2D, snowTexture);
+
+	glDrawArrays(GL_TRIANGLES, 3, plane_data.mPointCount);
+
+	for (int i = 0; i < 9; i++) {
 		mat4 snowman = identity_mat4();
-		snowman = translate(snowman, vec3(-65.0f+i*20, 0.0f, 0.0f));
+		snowman = translate(snowman, vec3(-75.0f+i*20, 0.0f, 0.0f));
 		snowman = translate(snowman, vec3(0.0f, 0.0f, forward_x));
 		glEnableVertexAttribArray(loc1);
 		glBindBuffer(GL_ARRAY_BUFFER, snowman_vp_vbo);
@@ -440,6 +434,9 @@ void display(){
 		glBindBuffer(GL_ARRAY_BUFFER, snowman_vt_vbo);
 		glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, snowManTexture);
 
 		glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
 
@@ -459,6 +456,10 @@ void display(){
 		glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		glUniformMatrix4fv(matrix_location, 1, GL_FALSE, arms.m);
 
+		glActiveTexture(GL_TEXTURE0);
+
+		glBindTexture(GL_TEXTURE_2D, woodTexture);
+
 		glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
 
 		mat4 hat = identity_mat4();
@@ -476,8 +477,18 @@ void display(){
 		glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat.m);
 
+		glBindTexture(GL_TEXTURE_2D, hatTexture);
+
 		glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 	}
+
+	glDepthFunc(GL_LEQUAL);
+	skyboxShader.use();
+	skyboxShader.setMat4("view", view);
+	skyboxShader.setMat4("projection", persp_proj);
+
+	skybox.draw(skyboxShader);
+	glDepthFunc(GL_LESS);
 	
     glutSwapBuffers();
 }
@@ -591,14 +602,22 @@ void mouseCallback(int xposIn, int yposIn) {
 
 void init()
 {
+	skybox = Skybox();
 	
 	// Set up the shaders
-	//snowShader = CompileShaders(snowShader, "Shaders/vs.txt","Shaders/fs.txt");
 	//snowShader = CompileShaders(snowShader, "Shaders/simpleVertexShader.txt", "Shaders/simpleFragmentShader.txt");
 	//snowShader = CompileShaders(snowShader, "Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
+	//planeShader = Shader("Shaders/vs.txt", "Shaders/fs.txt");
 	planeShader = Shader("Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
+	skyboxShader = Shader("Shaders/skyVS.txt", "Shaders/skyFS.txt");
 
-	snowTexture = loadTexture("snow_1_1.jpg");
+	snowTexture = loadTexture("snowyground.jpg");
+	snowManTexture = loadTexture("snow.jpg");
+	woodTexture = loadTexture("wood.jpg");
+	hatTexture = loadTexture("black.jpg");
+
+	cout << "textures: " << snowTexture << ", " << snowManTexture << ", " << woodTexture;
+
 	generateObjectBufferMesh();
 	
 }
