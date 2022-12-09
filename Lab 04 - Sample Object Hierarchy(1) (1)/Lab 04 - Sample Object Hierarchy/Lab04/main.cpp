@@ -11,6 +11,8 @@
 #include <string> 
 #include <fstream>
 #include <iostream>
+#include <math.h>
+
 
 // loading textures
 #define STB_IMAGE_IMPLEMENTATION
@@ -20,6 +22,9 @@
 #include "model.h"
 #include "shader.h"
 #include "skybox.h"
+
+// snow
+#define SNOWSIZE 500
 
 Shader planeShader;
 Shader skyboxShader;
@@ -33,6 +38,8 @@ unsigned int snowManTexture;
 unsigned int woodTexture;
 unsigned int hatTexture;
 unsigned int skyTexture;
+unsigned int barkTexture;
+unsigned int brickTexture;
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -87,6 +94,78 @@ unsigned int loadTexture(char const* path) {
 	return textureID;
 }
 
+#define RAINSIZE 50
+int winWidth = 1000, winHeight = 1000;
+int counter = 0;
+time_t t;
+float rotationAngle = 0;
+
+struct drop {
+	float x = 400;
+	float y = 400;
+	float inc = 0.01;
+	float radius = 5;
+	float scale = 1.0;
+	float rotationAngle = 0;
+	float rotationInc = 1;
+};
+
+drop rain[RAINSIZE];
+
+void initRain() {
+	srand((unsigned)time(&t));
+	for (int i = 0; i < RAINSIZE; i++) {
+		rain[i].x = rand() % winWidth;
+		rain[i].y = rand() % winHeight;
+		rain[i].inc = 1.5 + (float)(rand() % 100) / 1000.0;
+		rain[i].radius = (float)(rand() % 8);
+		rain[i].scale = (float)(rand() % 20000) / 1000.0;
+		rain[i].rotationAngle = (float)(rand() % 3000) / 1000.0;
+		rain[i].rotationInc = (float)(rand() % 100) / 1000.0;
+		if ((rand() % 100) > 50) {
+			rain[i].rotationInc = -rain[i].rotationInc;
+		}
+	}
+}
+
+void drawParticleShape(int i) {
+	glBegin(GL_POINTS);
+	glVertex2d(rain[i].x, rain[i].y);
+	glEnd();
+	glBegin(GL_LINES);
+	glVertex2d(rain[i].x, rain[i].y);
+	glVertex2d(rain[i].x, rain[i].y + rain[i].radius * 2);
+	glEnd();
+}
+
+void drawDrop(int i) {
+	glColor3f(0.0, 0.0, 1.0);
+	glLineWidth(2);
+	drawParticleShape(i);
+	rain[i].y -= rain[i].inc;
+	if (rain[i].y < 0) {
+		rain[i].y = winHeight;
+	}
+}
+
+void drawRain() {
+	for (int i = 0; i < RAINSIZE; i++) {
+		drawDrop(i);
+	}
+}
+float elapsedTime = 0, base_time = 0, fps = 0, frames;
+
+void calcFPS() {
+	elapsedTime = glutGet(GLUT_ELAPSED_TIME);
+	if ((elapsedTime - base_time) > 1000.0) {
+		fps = frames * 1000.0 / (elapsedTime - base_time);
+		printf("fps: %f", fps);
+		base_time = elapsedTime;
+		frames = 0;
+	}
+	frames++;
+}
+
 
 /*----------------------------------------------------------------------------
 MESH TO LOAD
@@ -97,6 +176,10 @@ MESH TO LOAD
 #define MESH_ARMS "snowmanArms.dae"
 #define MESH_HAT "snowmanHat.dae"
 #define PLANE_MESH "snow.obj"
+#define LEAF "leaf.obj"
+#define BARK "bark.obj"
+#define WALL "walls.obj"
+
 /*----------------------------------------------------------------------------
 ----------------------------------------------------------------------------*/
 unsigned int plane_vp_vbo = 0;
@@ -115,6 +198,18 @@ unsigned int hat_vp_vbo = 0;
 unsigned int hat_vn_vbo = 0;
 unsigned int hat_vt_vbo = 0;
 
+unsigned int leaf_vp_vbo = 0;
+unsigned int leaf_vn_vbo = 0;
+unsigned int leaf_vt_vbo = 0;
+
+unsigned int bark_vp_vbo = 0;
+unsigned int bark_vn_vbo = 0;
+unsigned int bark_vt_vbo = 0;
+
+unsigned int walls_vp_vbo = 0;
+unsigned int walls_vn_vbo = 0;
+unsigned int walls_vt_vbo = 0;
+
 
 using namespace std;
 GLuint shaderProgramID;
@@ -124,6 +219,10 @@ ModelData mesh_data;
 ModelData plane_data;
 ModelData arms_data;
 ModelData hat_data;
+ModelData leaf_data;
+ModelData bark_data;
+ModelData wall_data; 
+
 unsigned int mesh_vao = 0;
 
 
@@ -225,6 +324,12 @@ void generateObjectBufferMesh() {
 
 	hat_data = load_mesh(MESH_HAT);
 
+	leaf_data = load_mesh(LEAF);
+
+	bark_data = load_mesh(BARK);
+
+	wall_data = load_mesh(WALL);
+
 	plane_vp_vbo = 0;
 	glGenBuffers(1, &plane_vp_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vp_vbo);
@@ -295,6 +400,58 @@ void generateObjectBufferMesh() {
 	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, hat_data.mPointCount * sizeof(vec2), &hat_data.mTextureCoords[0], GL_STATIC_DRAW);
 	
+	leaf_vp_vbo = 0;
+	glGenBuffers(1, &leaf_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, leaf_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, leaf_data.mPointCount * sizeof(vec3), &leaf_data.mVertices[0], GL_STATIC_DRAW);
+
+
+
+	leaf_vn_vbo = 0;
+	glGenBuffers(1, &leaf_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, leaf_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, leaf_data.mPointCount * sizeof(vec3), &leaf_data.mNormals[0], GL_STATIC_DRAW);
+
+	leaf_vt_vbo = 0;
+	glGenBuffers(1, &leaf_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, leaf_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, leaf_data.mPointCount * sizeof(vec2), &leaf_data.mTextureCoords[0], GL_STATIC_DRAW);
+
+
+	bark_vp_vbo = 0;
+	glGenBuffers(1, &bark_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, bark_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, bark_data.mPointCount * sizeof(vec3), &bark_data.mVertices[0], GL_STATIC_DRAW);
+
+
+
+	bark_vn_vbo = 0;
+	glGenBuffers(1, &bark_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, bark_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, bark_data.mPointCount * sizeof(vec3), &bark_data.mNormals[0], GL_STATIC_DRAW);
+
+	bark_vt_vbo = 0;
+	glGenBuffers(1, &bark_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, bark_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, bark_data.mPointCount * sizeof(vec2), &bark_data.mTextureCoords[0], GL_STATIC_DRAW);
+
+	walls_vp_vbo = 0;
+	glGenBuffers(1, &walls_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, walls_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, wall_data.mPointCount * sizeof(vec3), &wall_data.mVertices[0], GL_STATIC_DRAW);
+
+
+
+	walls_vn_vbo = 0;
+	glGenBuffers(1, &walls_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, walls_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, wall_data.mPointCount * sizeof(vec3), &wall_data.mNormals[0], GL_STATIC_DRAW);
+
+	walls_vt_vbo = 0;
+	glGenBuffers(1, &walls_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, walls_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, wall_data.mPointCount * sizeof(vec2), &wall_data.mTextureCoords[0], GL_STATIC_DRAW);
+
 
 	skybox.GenObjectBuffer(skyboxShader);
 }
@@ -323,9 +480,9 @@ float spec = 1.0f;
 unsigned int VAO;
 
 vec3 lightPositions[] = {
-	vec3(0.0f, 8.0f, -15.0f),
+	vec3(0.0f, 8.0f, 35.0f),
 	vec3(15.0f, 6.0f, 10.0f),
-	vec3(-10.0f, 3.0f, -5.0f)
+	vec3(-10.0f, 3.0f, 30.0f)
 };
 
 void display(){
@@ -339,7 +496,7 @@ void display(){
 	vec3 value = camera.Position;
 
 	//Declare your uniform variables that will be used in your shader
-	int matrix_location = glGetUniformLocation (planeShader.ID, "model");
+	int matrix_location = glGetUniformLocation(planeShader.ID, "model");
 	int view_mat_location = glGetUniformLocation (planeShader.ID, "view");
 	int proj_mat_location = glGetUniformLocation (planeShader.ID, "proj");
 
@@ -369,8 +526,8 @@ void display(){
 	planeShader.setVec3("pointLights[0].diffuse", vec3(diffuse, diffuse, diffuse));
 	planeShader.setVec3("pointLights[0].specular", vec3(spec, spec, spec));
 	planeShader.setFloat("pointLights[0].constant", 1.0f);
-	planeShader.setFloat("pointLights[0].linear", 0.07);
-	planeShader.setFloat("pointLights[0].quadratic", 0.012);
+	planeShader.setFloat("pointLights[0].linear", 0.014);
+	planeShader.setFloat("pointLights[0].quadratic", 0.02);
 
 
 	planeShader.setVec3("pointLights[1].position", lightPositions[1]);
@@ -390,12 +547,10 @@ void display(){
 	planeShader.setFloat("pointLights[2].constant", 1.0f);
 	planeShader.setFloat("pointLights[2].linear", 0.014);
 	planeShader.setFloat("pointLights[2].quadratic", 0.0002);
-	
 
 	planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
 	planeShader.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f)); // specular lighting doesn't have full effect on this object's material
-	planeShader.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f)); // specular lighting doesn't have full effect on this object's material
-	planeShader.setFloat("material.shininess", 32.0f);
+	planeShader.setFloat("material.shininess", 30.0f);
 
 
 	mat4 Plane = identity_mat4();
@@ -420,7 +575,79 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 3, plane_data.mPointCount);
 
+	mat4 wall = identity_mat4();
+	wall = translate(wall, vec3(0.0f, 0.0f, 20.0f));
+
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, walls_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, walls_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, walls_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glUniformMatrix4fv(matrix_location, 3, GL_FALSE, wall.m);
+
+	glActiveTexture(GL_TEXTURE0);
+
+	glBindTexture(GL_TEXTURE_2D, brickTexture);
+
+	glDrawArrays(GL_TRIANGLES, 3, wall_data.mPointCount);
+
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 9; j++) {
+
+			mat4 bark = identity_mat4();
+			bark = translate(bark, vec3(-75.0f + j * 20, 0.0f, -15.0f * (i + 1)));
+
+			glEnableVertexAttribArray(loc1);
+			glBindBuffer(GL_ARRAY_BUFFER, bark_vp_vbo);
+			glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+			glEnableVertexAttribArray(loc2);
+			glBindBuffer(GL_ARRAY_BUFFER, bark_vn_vbo);
+			glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+			glEnableVertexAttribArray(loc3);
+			glBindBuffer(GL_ARRAY_BUFFER, bark_vt_vbo);
+			glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+			glUniformMatrix4fv(matrix_location, 1, GL_FALSE, bark.m);
+
+			glActiveTexture(GL_TEXTURE0);
+
+			glBindTexture(GL_TEXTURE_2D, woodTexture);
+
+			glDrawArrays(GL_TRIANGLES, 3, bark_data.mPointCount);
+
+			mat4 leaves = identity_mat4();
+			leaves = bark * leaves;
+
+			glEnableVertexAttribArray(loc1);
+			glBindBuffer(GL_ARRAY_BUFFER, leaf_vp_vbo);
+			glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+			glEnableVertexAttribArray(loc2);
+			glBindBuffer(GL_ARRAY_BUFFER, leaf_vn_vbo);
+			glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+			glEnableVertexAttribArray(loc3);
+			glBindBuffer(GL_ARRAY_BUFFER, leaf_vt_vbo);
+			glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+
+			glUniformMatrix4fv(matrix_location, 1, GL_FALSE, leaves.m);
+
+			glActiveTexture(GL_TEXTURE0);
+
+			glBindTexture(GL_TEXTURE_2D, snowTexture);
+
+			glDrawArrays(GL_TRIANGLES, 3, leaf_data.mPointCount);
+
+		}
+	}
+
 	for (int i = 0; i < 9; i++) {
+		planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
+		planeShader.setVec3("material.specular", vec3(0.1f, 0.1f, 0.1f)); // specular lighting doesn't have full effect on this object's material
+		planeShader.setFloat("material.shininess", 32.0f);
+		
 		mat4 snowman = identity_mat4();
 		snowman = translate(snowman, vec3(-75.0f+i*20, 0.0f, 0.0f));
 		snowman = translate(snowman, vec3(0.0f, 0.0f, forward_x));
@@ -440,6 +667,7 @@ void display(){
 
 		glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
 
+		planeShader.setInt("material.diffuse", 0);
 		mat4 arms = identity_mat4();
 		arms = translate(arms, vec3(0.0f, forward_z, 0.0f));
 		arms = rotate_z_deg(arms, rotate_x);
@@ -458,9 +686,13 @@ void display(){
 
 		glActiveTexture(GL_TEXTURE0);
 
-		glBindTexture(GL_TEXTURE_2D, woodTexture);
+		glBindTexture(GL_TEXTURE_2D, barkTexture);
 
 		glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
+
+		planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
+		planeShader.setVec3("material.specular", vec3(1.0f, 1.0f, 1.0f)); // specular lighting doesn't have full effect on this object's material
+		planeShader.setFloat("material.shininess", 100.0f);
 
 		mat4 hat = identity_mat4();
 		hat = rotate_y_deg(hat, angle);
@@ -482,12 +714,18 @@ void display(){
 		glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 	}
 
-	glDepthFunc(GL_LEQUAL);
-	skyboxShader.use();
-	skyboxShader.setMat4("view", view);
-	skyboxShader.setMat4("projection", persp_proj);
+	drawRain();
+	calcFPS();
+	glFlush();
+	glutPostRedisplay();
 
-	skybox.draw(skyboxShader);
+	matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
+	mat4 test = identity_mat4();
+	skyboxShader.use();
+	matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
+	skyboxShader.setMat4("view", test);
+	skyboxShader.setMat4("proj", persp_proj);
+	skybox.draw(skyboxShader, matrix_location);
 	glDepthFunc(GL_LESS);
 	
     glutSwapBuffers();
@@ -520,7 +758,7 @@ void updateScene() {
 		}
 		//forward_z += x * delta;
 		rotate_x += z * delta;
-		if (forward_x > 40.0f || forward_x < -40.f) {
+		if (forward_x > 40.0f || forward_x < 0.f) {
 			y = -y;
 		}
 		forward_x += y * delta;
@@ -550,6 +788,36 @@ void keyboard(unsigned char key, int x, int y)
 	if (key == 't') {
 		start = !start;
 	}
+	if (key == '1') {
+		initRain();
+
+	}
+
+	if (key == 'r') {
+		ambient = 0.5f;
+		diffuse = 0.4f;
+		spec = 1.0f;
+	}
+	//Ambient
+	if (key == 'a') {
+		ambient = 0.5f;
+		diffuse = 0.0f;
+		spec = 0.0f;
+	}
+	//Diffuse
+	if (key == 'y') {
+		ambient = 0.0f;
+		diffuse = 0.4f;
+		spec = 0.0f;
+	}
+	//Spec
+	if (key == 'u') {
+		spec = 1.0f;
+		ambient = 0.0f;
+		diffuse = 0.0f;
+	}
+
+
 }
 int startX, startY, tracking = 0;
 
@@ -611,19 +879,32 @@ void init()
 	planeShader = Shader("Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
 	skyboxShader = Shader("Shaders/skyVS.txt", "Shaders/skyFS.txt");
 
+	skyboxShader.use();
+	skyboxShader.setInt("skybox", 1);
+
 	snowTexture = loadTexture("snowyground.jpg");
 	snowManTexture = loadTexture("snow.jpg");
 	woodTexture = loadTexture("wood.jpg");
 	hatTexture = loadTexture("black.jpg");
+	barkTexture = loadTexture("bark.jpg");
+	brickTexture = loadTexture("brick.jpg");
 
-	cout << "textures: " << snowTexture << ", " << snowManTexture << ", " << woodTexture;
+	glClearColor(0, 0, 0, 0);
+	calcFPS();
+	glFlush();
+	glMatrixMode(GL_PROJECTION);
+	gluOrtho2D(0.0, winWidth, 0.0, winHeight);
 
+	
 	generateObjectBufferMesh();
+	
+}
+void idle() {
 	
 }
 
 int main(int argc, char** argv){
-
+	srand(1);
 	// Set up the window
 	glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
