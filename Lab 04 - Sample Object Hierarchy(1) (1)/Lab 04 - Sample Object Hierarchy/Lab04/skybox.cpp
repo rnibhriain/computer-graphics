@@ -4,12 +4,13 @@
 
 std::vector<std::string> faces =
 {
-		"skybox/negx.jpg",
-		"skybox/negy.jpg",
-		"skybox/negz.jpg",
 		"skybox/posx.jpg",
+		"skybox/negx.jpg",
 		"skybox/posy.jpg",
-		"skybox/posz.jpg"
+		"skybox/negy.jpg",
+		"skybox/posz.jpg",
+		"skybox/negz.jpg"
+
 };
 
 Skybox::Skybox() {
@@ -63,13 +64,6 @@ GLfloat skyboxVertices[] = {
 
 GLuint loc4, loc5;
 
-void Skybox::draw(Shader shader, int mat) {
-	glBindVertexArray(vao);
-	glActiveTexture(GL_TEXTURE0 + texture);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
-}
 
 void Skybox::draw(Shader shader, mat4 view, mat4 persp_proj) {
 	shader.use();
@@ -95,6 +89,14 @@ void Skybox::draw(Shader shader, mat4 view, mat4 persp_proj) {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 	glDepthFunc(GL_LESS);
+}
+
+void Skybox::draw(Shader shader, GLuint matrix_location) {
+	glBindVertexArray(vao);
+	glActiveTexture(GL_TEXTURE0 + texture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
 }
 
 void Skybox::GenObjectBuffer(Shader shader) {

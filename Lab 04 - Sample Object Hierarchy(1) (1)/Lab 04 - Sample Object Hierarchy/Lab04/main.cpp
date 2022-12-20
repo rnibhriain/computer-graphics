@@ -51,6 +51,7 @@ vector<Texture> textures;
 
 // camera
 Camera camera(vec3(0.0f, 0.0f, 3.0f));
+Camera skyCamera(vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -490,12 +491,14 @@ vec3 lightPositions[] = {
 void display(){
 
 	// tell GL to only draw onto a pixel if the shape is closer to the viewer
-	glEnable (GL_DEPTH_TEST); // enable depth-testing
-	glDepthFunc (GL_LESS); // depth-testing interprets a smaller value as "closer"
-	glClearColor (0.0f, 0.0f, 1.0f, 1.0f);
-	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST); // enable depth-testing
+	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
+	glClearColor(0.f, 0.5f, 0.5f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glUseProgram(planeShader.ID);
-	vec3 value = camera.Position;
+
+	planeShader.setVec3("viewPos", camera.Position);
 
 	//Declare your uniform variables that will be used in your shader
 	int matrix_location = glGetUniformLocation(planeShader.ID, "model");
@@ -731,19 +734,21 @@ void display(){
 		glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 	}
 
-	drawRain();
-	calcFPS();
-	glFlush();
-	glutPostRedisplay();
-
-	mat4 skyView = identity_mat4();
 	glDepthFunc(GL_LEQUAL);
+
 	skyboxShader.use();
+	mat4 skyView = skyCamera.GetViewMatrix();
 	matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
 	skyboxShader.setMat4("view", skyView);
 	skyboxShader.setMat4("proj", persp_proj);
 	skybox.draw(skyboxShader, matrix_location);
 	glDepthFunc(GL_LESS);
+
+	drawRain();
+	calcFPS();
+	glFlush();
+	//glutPostRedisplay();
+
 	glutSwapBuffers();
 }
 
@@ -882,6 +887,7 @@ void mouseCallback(int xposIn, int yposIn) {
 	lastY = ypos;
 
 	camera.ProcessMouseMovement(xoffset, yoffset);
+	skyCamera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 void init()
@@ -903,7 +909,7 @@ void init()
 	woodTexture = loadTexture("wood.jpg");
 	hatTexture = loadTexture("black.jpg");
 	barkTexture = loadTexture("bark.jpg");
-	houseTexture = loadTexture("Farmhouse.jpg");
+	houseTexture = loadTexture("farmhouse.jpg");
 
 	glClearColor(0, 0, 0, 0);
 	calcFPS();
