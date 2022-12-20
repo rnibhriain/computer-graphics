@@ -39,7 +39,7 @@ unsigned int woodTexture;
 unsigned int hatTexture;
 unsigned int skyTexture;
 unsigned int barkTexture;
-unsigned int brickTexture;
+unsigned int houseTexture;
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -178,7 +178,7 @@ MESH TO LOAD
 #define PLANE_MESH "snow.obj"
 #define LEAF "leaf.obj"
 #define BARK "bark.obj"
-#define WALL "walls.obj"
+#define HOUSE "house.obj"
 
 /*----------------------------------------------------------------------------
 ----------------------------------------------------------------------------*/
@@ -206,9 +206,9 @@ unsigned int bark_vp_vbo = 0;
 unsigned int bark_vn_vbo = 0;
 unsigned int bark_vt_vbo = 0;
 
-unsigned int walls_vp_vbo = 0;
-unsigned int walls_vn_vbo = 0;
-unsigned int walls_vt_vbo = 0;
+unsigned int house_vp_vbo = 0;
+unsigned int house_vn_vbo = 0;
+unsigned int house_vt_vbo = 0;
 
 
 using namespace std;
@@ -222,6 +222,7 @@ ModelData hat_data;
 ModelData leaf_data;
 ModelData bark_data;
 ModelData wall_data; 
+ModelData house_data;
 
 unsigned int mesh_vao = 0;
 
@@ -328,7 +329,7 @@ void generateObjectBufferMesh() {
 
 	bark_data = load_mesh(BARK);
 
-	wall_data = load_mesh(WALL);
+	house_data = load_mesh(HOUSE);
 
 	plane_vp_vbo = 0;
 	glGenBuffers(1, &plane_vp_vbo);
@@ -435,22 +436,22 @@ void generateObjectBufferMesh() {
 	glBindBuffer(GL_ARRAY_BUFFER, bark_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, bark_data.mPointCount * sizeof(vec2), &bark_data.mTextureCoords[0], GL_STATIC_DRAW);
 
-	walls_vp_vbo = 0;
-	glGenBuffers(1, &walls_vp_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, walls_vp_vbo);
-	glBufferData(GL_ARRAY_BUFFER, wall_data.mPointCount * sizeof(vec3), &wall_data.mVertices[0], GL_STATIC_DRAW);
+	house_vp_vbo = 0;
+	glGenBuffers(1, &house_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, house_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, house_data.mPointCount * sizeof(vec3), &house_data.mVertices[0], GL_STATIC_DRAW);
 
 
 
-	walls_vn_vbo = 0;
-	glGenBuffers(1, &walls_vn_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, walls_vn_vbo);
-	glBufferData(GL_ARRAY_BUFFER, wall_data.mPointCount * sizeof(vec3), &wall_data.mNormals[0], GL_STATIC_DRAW);
+	house_vn_vbo = 0;
+	glGenBuffers(1, &house_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, house_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, house_data.mPointCount * sizeof(vec3), &house_data.mNormals[0], GL_STATIC_DRAW);
 
-	walls_vt_vbo = 0;
-	glGenBuffers(1, &walls_vt_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, walls_vt_vbo);
-	glBufferData(GL_ARRAY_BUFFER, wall_data.mPointCount * sizeof(vec2), &wall_data.mTextureCoords[0], GL_STATIC_DRAW);
+	house_vt_vbo = 0;
+	glGenBuffers(1, &house_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, house_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, house_data.mPointCount * sizeof(vec2), &house_data.mTextureCoords[0], GL_STATIC_DRAW);
 
 
 	skybox.GenObjectBuffer(skyboxShader);
@@ -480,9 +481,10 @@ float spec = 1.0f;
 unsigned int VAO;
 
 vec3 lightPositions[] = {
-	vec3(0.0f, 8.0f, 35.0f),
+	vec3(0.0f, 10.0f, -15.0f),
 	vec3(15.0f, 6.0f, 10.0f),
-	vec3(-10.0f, 3.0f, 30.0f)
+	vec3(-10.0f, 3.0f, -15.0f),
+	vec3(0.0f, 0.0f, 40.0f)
 };
 
 void display(){
@@ -548,6 +550,14 @@ void display(){
 	planeShader.setFloat("pointLights[2].linear", 0.014);
 	planeShader.setFloat("pointLights[2].quadratic", 0.0002);
 
+	planeShader.setVec3("pointLights[3].position", lightPositions[3]);
+	planeShader.setVec3("pointLights[3].ambient", vec3(ambient, ambient, ambient));
+	planeShader.setVec3("pointLights[3].diffuse", vec3(diffuse, diffuse, diffuse));
+	planeShader.setVec3("pointLights[3].specular", vec3(spec, spec, spec));
+	planeShader.setFloat("pointLights[3].constant", 1.0f);
+	planeShader.setFloat("pointLights[3].linear", 0.014);
+	planeShader.setFloat("pointLights[3].quadratic", 0.0002);
+
 	planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
 	planeShader.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f)); // specular lighting doesn't have full effect on this object's material
 	planeShader.setFloat("material.shininess", 30.0f);
@@ -575,26 +585,33 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 3, plane_data.mPointCount);
 
-	mat4 wall = identity_mat4();
-	wall = translate(wall, vec3(0.0f, 0.0f, 20.0f));
+	planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
+	planeShader.setVec3("material.specular", vec3(1.1f, 1.1f, 1.1f)); // specular lighting doesn't have full effect on this object's material
+	planeShader.setFloat("material.shininess", 32.0f);
 
+	mat4 House = identity_mat4();
+	House = translate(House, vec3(50.0f, 0.0f, 50.0f));
+	House = Plane * House;
 	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, walls_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, house_vp_vbo);
 	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, walls_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, house_vn_vbo);
 	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(loc3);
-	glBindBuffer(GL_ARRAY_BUFFER, walls_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, house_vt_vbo);
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 
-	glUniformMatrix4fv(matrix_location, 3, GL_FALSE, wall.m);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, House.m);
+
+	glEnable(GL_TEXTURE_2D);
 
 	glActiveTexture(GL_TEXTURE0);
 
-	glBindTexture(GL_TEXTURE_2D, brickTexture);
+	glBindTexture(GL_TEXTURE_2D, woodTexture);
 
-	glDrawArrays(GL_TRIANGLES, 3, wall_data.mPointCount);
+	glDrawArrays(GL_TRIANGLES, 3, house_data.mPointCount);
+
 
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 9; j++) {
@@ -719,16 +736,15 @@ void display(){
 	glFlush();
 	glutPostRedisplay();
 
-	matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
-	mat4 test = identity_mat4();
+	mat4 skyView = identity_mat4();
+	glDepthFunc(GL_LEQUAL);
 	skyboxShader.use();
 	matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
-	skyboxShader.setMat4("view", test);
+	skyboxShader.setMat4("view", skyView);
 	skyboxShader.setMat4("proj", persp_proj);
 	skybox.draw(skyboxShader, matrix_location);
 	glDepthFunc(GL_LESS);
-	
-    glutSwapBuffers();
+	glutSwapBuffers();
 }
 
 
@@ -887,7 +903,7 @@ void init()
 	woodTexture = loadTexture("wood.jpg");
 	hatTexture = loadTexture("black.jpg");
 	barkTexture = loadTexture("bark.jpg");
-	brickTexture = loadTexture("brick.jpg");
+	houseTexture = loadTexture("Farmhouse.jpg");
 
 	glClearColor(0, 0, 0, 0);
 	calcFPS();
