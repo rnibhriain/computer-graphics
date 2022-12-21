@@ -83,6 +83,7 @@
     <ClCompile Include="maths_funcs.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="skybox.cpp" />
+    <ClCompile Include="Snow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="maths_funcs.h" />
@@ -90,6 +91,7 @@
     <ClInclude Include="model.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="skybox.h" />
+    <ClInclude Include="Snow.h" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -13,6 +13,7 @@
 #include <iostream>
 #include <math.h>
 
+#include "Snow.h"
 
 // loading textures
 #define STB_IMAGE_IMPLEMENTATION
@@ -23,8 +24,8 @@
 #include "shader.h"
 #include "skybox.h"
 
-// snow
-#define SNOWSIZE 500
+
+Snow snow;
 
 Shader planeShader;
 Shader skyboxShader;
@@ -40,6 +41,7 @@ unsigned int hatTexture;
 unsigned int skyTexture;
 unsigned int barkTexture;
 unsigned int houseTexture;
+unsigned int fireTexture;
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -75,7 +77,8 @@ unsigned int loadTexture(char const* path) {
 			format = GL_RGB;
 		else if (nrChannels == 4)
 			format = GL_RGBA;
-
+		
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
 		glGenerateMipmap(GL_TEXTURE_2D);
@@ -95,77 +98,6 @@ unsigned int loadTexture(char const* path) {
 	return textureID;
 }
 
-#define RAINSIZE 50
-int winWidth = 1000, winHeight = 1000;
-int counter = 0;
-time_t t;
-float rotationAngle = 0;
-
-struct drop {
-	float x = 400;
-	float y = 400;
-	float inc = 0.01;
-	float radius = 5;
-	float scale = 1.0;
-	float rotationAngle = 0;
-	float rotationInc = 1;
-};
-
-drop rain[RAINSIZE];
-
-void initRain() {
-	srand((unsigned)time(&t));
-	for (int i = 0; i < RAINSIZE; i++) {
-		rain[i].x = rand() % winWidth;
-		rain[i].y = rand() % winHeight;
-		rain[i].inc = 1.5 + (float)(rand() % 100) / 1000.0;
-		rain[i].radius = (float)(rand() % 8);
-		rain[i].scale = (float)(rand() % 20000) / 1000.0;
-		rain[i].rotationAngle = (float)(rand() % 3000) / 1000.0;
-		rain[i].rotationInc = (float)(rand() % 100) / 1000.0;
-		if ((rand() % 100) > 50) {
-			rain[i].rotationInc = -rain[i].rotationInc;
-		}
-	}
-}
-
-void drawParticleShape(int i) {
-	glBegin(GL_POINTS);
-	glVertex2d(rain[i].x, rain[i].y);
-	glEnd();
-	glBegin(GL_LINES);
-	glVertex2d(rain[i].x, rain[i].y);
-	glVertex2d(rain[i].x, rain[i].y + rain[i].radius * 2);
-	glEnd();
-}
-
-void drawDrop(int i) {
-	glColor3f(0.0, 0.0, 1.0);
-	glLineWidth(2);
-	drawParticleShape(i);
-	rain[i].y -= rain[i].inc;
-	if (rain[i].y < 0) {
-		rain[i].y = winHeight;
-	}
-}
-
-void drawRain() {
-	for (int i = 0; i < RAINSIZE; i++) {
-		drawDrop(i);
-	}
-}
-float elapsedTime = 0, base_time = 0, fps = 0, frames;
-
-void calcFPS() {
-	elapsedTime = glutGet(GLUT_ELAPSED_TIME);
-	if ((elapsedTime - base_time) > 1000.0) {
-		fps = frames * 1000.0 / (elapsedTime - base_time);
-		printf("fps: %f", fps);
-		base_time = elapsedTime;
-		frames = 0;
-	}
-	frames++;
-}
 
 
 /*----------------------------------------------------------------------------
@@ -180,6 +112,7 @@ MESH TO LOAD
 #define LEAF "leaf.obj"
 #define BARK "bark.obj"
 #define HOUSE "house.obj"
+#define FIRE "fire.obj"
 
 /*----------------------------------------------------------------------------
 ----------------------------------------------------------------------------*/
@@ -211,6 +144,10 @@ unsigned int house_vp_vbo = 0;
 unsigned int house_vn_vbo = 0;
 unsigned int house_vt_vbo = 0;
 
+unsigned int fire_vp_vbo = 0;
+unsigned int fire_vn_vbo = 0;
+unsigned int fire_vt_vbo = 0;
+
 
 using namespace std;
 GLuint shaderProgramID;
@@ -222,8 +159,8 @@ ModelData arms_data;
 ModelData hat_data;
 ModelData leaf_data;
 ModelData bark_data;
-ModelData wall_data; 
 ModelData house_data;
+ModelData fire_data;
 
 unsigned int mesh_vao = 0;
 
@@ -331,6 +268,8 @@ void generateObjectBufferMesh() {
 	bark_data = load_mesh(BARK);
 
 	house_data = load_mesh(HOUSE);
+
+	fire_data = load_mesh(FIRE);
 
 	plane_vp_vbo = 0;
 	glGenBuffers(1, &plane_vp_vbo);
@@ -454,12 +393,30 @@ void generateObjectBufferMesh() {
 	glBindBuffer(GL_ARRAY_BUFFER, house_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, house_data.mPointCount * sizeof(vec2), &house_data.mTextureCoords[0], GL_STATIC_DRAW);
 
+	fire_vp_vbo = 0;
+	glGenBuffers(1, &fire_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, fire_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, fire_data.mPointCount * sizeof(vec3), &fire_data.mVertices[0], GL_STATIC_DRAW);
+
+
+
+	fire_vn_vbo = 0;
+	glGenBuffers(1, &fire_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, fire_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, fire_data.mPointCount * sizeof(vec3), &fire_data.mNormals[0], GL_STATIC_DRAW);
+
+	fire_vt_vbo = 0;
+	glGenBuffers(1, &fire_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, fire_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, fire_data.mPointCount * sizeof(vec2), &fire_data.mTextureCoords[0], GL_STATIC_DRAW);
+
 
 	skybox.GenObjectBuffer(skyboxShader);
 }
 
 
 #pragma endregion VBO_FUNCTIONS
+
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -496,6 +453,7 @@ void display(){
 	glClearColor(0.f, 0.5f, 0.5f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glEnable(GL_FOG);
 	glUseProgram(planeShader.ID);
 
 	planeShader.setVec3("viewPos", camera.Position);
@@ -734,6 +692,23 @@ void display(){
 		glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 	}
 
+	mat4 fire = identity_mat4();
+	fire = translate(fire, vec3(30.0f, 2.5f, 30.0f));
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, fire_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, fire_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, fire_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, fire.m);
+
+	glBindTexture(GL_TEXTURE_2D, fireTexture);
+
+	glDrawArrays(GL_TRIANGLES, 3, fire_data.mPointCount);
+
 	glDepthFunc(GL_LEQUAL);
 
 	skyboxShader.use();
@@ -744,10 +719,10 @@ void display(){
 	skybox.draw(skyboxShader, matrix_location);
 	glDepthFunc(GL_LESS);
 
-	drawRain();
-	calcFPS();
-	glFlush();
-	//glutPostRedisplay();
+	glEnd();
+
+	snow.drawRain();
+	glutPostRedisplay();
 
 	glutSwapBuffers();
 }
@@ -809,10 +784,6 @@ void keyboard(unsigned char key, int x, int y)
 	if (key == 't') {
 		start = !start;
 	}
-	if (key == '1') {
-		initRain();
-
-	}
 
 	if (key == 'r') {
 		ambient = 0.5f;
@@ -820,7 +791,7 @@ void keyboard(unsigned char key, int x, int y)
 		spec = 1.0f;
 	}
 	//Ambient
-	if (key == 'a') {
+	if (key == 'i') {
 		ambient = 0.5f;
 		diffuse = 0.0f;
 		spec = 0.0f;
@@ -910,27 +881,24 @@ void init()
 	hatTexture = loadTexture("black.jpg");
 	barkTexture = loadTexture("bark.jpg");
 	houseTexture = loadTexture("farmhouse.jpg");
+	fireTexture = loadTexture("campfire.png");
 
-	glClearColor(0, 0, 0, 0);
-	calcFPS();
-	glFlush();
+	snow = Snow();
+
+	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glMatrixMode(GL_PROJECTION);
-	gluOrtho2D(0.0, winWidth, 0.0, winHeight);
-
-	
+		
 	generateObjectBufferMesh();
-	
-}
-void idle() {
 	
 }
 
 int main(int argc, char** argv){
 	srand(1);
 	// Set up the window
+
 	glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
-    glutInitWindowSize(width, height);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
+	glutInitWindowSize(width, height);
     glutCreateWindow("Winter Wonderland");
 	// Tell glut where the display function is
 	glutDisplayFunc(display);
@@ -938,7 +906,8 @@ int main(int argc, char** argv){
 	glutKeyboardFunc(keyboard);
 	glutPassiveMotionFunc(mouseCallback);
 	glutMouseFunc(mouse);
-
+	glEnable(GL_BLEND); //Enable blending.
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	 // A call to glewInit() must be done after glut is initialized!
 	glewExperimental = GL_TRUE; //for non-lab machines, this line gives better modern GL support
     GLenum res = glewInit();
