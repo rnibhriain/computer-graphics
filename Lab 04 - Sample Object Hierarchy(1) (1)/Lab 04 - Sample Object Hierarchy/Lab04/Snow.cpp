@@ -7,8 +7,9 @@ time_t t;
 float rotationAngle = 0;
 
 struct drop {
-    float x = 400;
-    float y = 400;
+    float x = 1000;
+    float y = 1000;
+    float z = 1000;
     float inc = 0.01;
     float radius = 5;
     float scale = 1.0;
@@ -18,38 +19,18 @@ struct drop {
 
 drop rain[RAINSIZE];
 
-Snow::Snow() {
-    initRain();
-}
-
-void Snow::initRain() {
-    srand((unsigned)time(&t));
-    for (int i = 0; i < RAINSIZE; i++) {
-        rain[i].x = rand() % winWidth;
-        rain[i].y = rand() % winHeight;
-        rain[i].inc = 0.1 + (float)(rand() % 100) / 1000.0;
-        rain[i].radius = (float)(rand() % 8);
-        rain[i].scale = (float)(rand() % 20000) / 1000.0;
-        rain[i].rotationAngle = (float)(rand() % 3000) / 1000.0;
-        rain[i].rotationInc = (float)(rand() % 100) / 1000.0;
-        if ((rand() % 100) > 50) {
-            rain[i].rotationInc = -rain[i].rotationInc;
-        }
-    }
-}
-
 void drawParticleShape(int i) {
     glBegin(GL_POINTS);
-    glVertex2d(rain[i].x, rain[i].y);
+    glVertex3d(rain[i].x, rain[i].y, rain[i].z);
     glEnd();
     glBegin(GL_LINES);
-    glVertex2d(rain[i].x, rain[i].y);
-    glVertex2d(rain[i].x, rain[i].y + rain[i].radius * 2);
+    glVertex3d(rain[i].x, rain[i].y, rain[i].z);
+    glVertex3d(rain[i].x, rain[i].y + rain[i].radius * 2, rain[i].z);
     glEnd();
 }
 
 void drawDrop(int i) {
-    glColor3f(1.0, 1.0, 1.0);
+    glColor3f(255.0, 255.0, 255.0);
     glLineWidth(2);
     drawParticleShape(i);
     rain[i].y -= rain[i].inc;
@@ -76,4 +57,32 @@ void Snow::drawRain() {
     }
     calcFPS();
     glFlush();
+}
+
+
+Snow::Snow() {
+
+    glClearColor(0.0, 0.0, 0.0, 0.0); // set what colour you want the background to be
+    glMatrixMode(GL_PROJECTION); // set the matrix mode, we will look at this later
+    gluOrtho2D(0.0, winWidth, 0.0, winHeight);
+
+    srand((unsigned)time(&t));
+    for (int i = 0; i < RAINSIZE; i++) {
+        rain[i].x = rand() % 100;
+        rain[i].y = rand() % 100;
+        rain[i].z = rand() % 100;
+        rain[i].inc = 0.1 + (float)(rand() % 100) / 1000.0;
+        rain[i].radius = (float)(rand() % 8);
+        rain[i].scale = (float)(rand() % 20000) / 1000.0;
+        rain[i].rotationAngle = (float)(rand() % 3000) / 1000.0;
+        rain[i].rotationInc = (float)(rand() % 100) / 1000.0;
+        if ((rand() % 100) > 50) {
+            rain[i].rotationInc = -rain[i].rotationInc;
+        }
+    }
+    calcFPS();
+    glFlush();
+    glClearColor(0.0, 0.0, 0.0, 0.0); // set what colour you want the background to be
+    glMatrixMode(GL_PROJECTION); // set the matrix mode, we will look at this later
+    gluOrtho2D(0.0, winWidth, 0.0, winHeight);
 }

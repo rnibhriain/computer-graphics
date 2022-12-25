@@ -79,6 +79,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="heightmap.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="maths_funcs.cpp" />
     <ClCompile Include="shader.cpp" />
@@ -86,6 +87,7 @@
     <ClCompile Include="Snow.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="heightmap.h" />
     <ClInclude Include="maths_funcs.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />

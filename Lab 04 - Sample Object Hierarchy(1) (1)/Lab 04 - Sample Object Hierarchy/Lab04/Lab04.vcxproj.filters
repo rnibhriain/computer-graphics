@@ -30,6 +30,9 @@
     <ClCompile Include="Snow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="heightmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="maths_funcs.h">
@@ -51,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Snow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="heightmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

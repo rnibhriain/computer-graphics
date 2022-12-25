@@ -62,44 +62,17 @@ GLfloat skyboxVertices[] = {
 	 50.0f, -50.0f,  50.0f
 };
 
-GLuint loc4, loc5;
-
-
-void Skybox::draw(Shader shader, mat4 view, mat4 persp_proj) {
-	shader.use();
+void Skybox::draw() {
 	glDepthFunc(GL_LEQUAL);
-	shader.setInt("skybox", 0);
-	glEnable(GL_TEXTURE_CUBE_MAP);
-	glDisable(GL_DEPTH_TEST);
-
-	loc4 = glGetAttribLocation(shader.ID, "vertex_position");
-	//loc2 = glGetAttribLocation(planeShader.ID, "vertex_normal");
-
-	//glUniformMatrix4fv(loc1, false, view);
-	
-
-	glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-	shader.use();
-	shader.setMat4("view", view);
-	shader.setMat4("projection", persp_proj);
-	// skybox cube
 	glBindVertexArray(vao);
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0 + texture);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 	glDepthFunc(GL_LESS);
 }
 
-void Skybox::draw(Shader shader, GLuint matrix_location) {
-	glBindVertexArray(vao);
-	glActiveTexture(GL_TEXTURE0 + texture);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
-}
-
-void Skybox::GenObjectBuffer(Shader shader) {
+void Skybox::GenObjectBuffer() {
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
 	glBindVertexArray(vao);

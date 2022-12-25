@@ -23,6 +23,7 @@
 #include "model.h"
 #include "shader.h"
 #include "skybox.h"
+#include "heightmap.h"
 
 
 Snow snow;
@@ -31,6 +32,8 @@ Shader planeShader;
 Shader skyboxShader;
 
 Skybox skybox;
+
+HeightMap heightmap;
 
 using namespace std;
 
@@ -411,7 +414,7 @@ void generateObjectBufferMesh() {
 	glBufferData(GL_ARRAY_BUFFER, fire_data.mPointCount * sizeof(vec2), &fire_data.mTextureCoords[0], GL_STATIC_DRAW);
 
 
-	skybox.GenObjectBuffer(skyboxShader);
+	skybox.GenObjectBuffer();
 }
 
 
@@ -430,7 +433,7 @@ const float radius = 10.0f;
 GLfloat forward_x = 0;
 GLfloat forward_z = 0;
 GLfloat angle = 0;
-float rotate_x = 1;
+float rotate_z = 1;
 
 float ambient = 0.5f;
 float diffuse = 0.4f;
@@ -450,10 +453,9 @@ void display(){
 	// tell GL to only draw onto a pixel if the shape is closer to the viewer
 	glEnable(GL_DEPTH_TEST); // enable depth-testing
 	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
-	glClearColor(0.f, 0.5f, 0.5f, 1.0f);
+	glClearColor(0.f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glEnable(GL_FOG);
 	glUseProgram(planeShader.ID);
 
 	planeShader.setVec3("viewPos", camera.Position);
@@ -547,7 +549,7 @@ void display(){
 	glDrawArrays(GL_TRIANGLES, 3, plane_data.mPointCount);
 
 	planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
-	planeShader.setVec3("material.specular", vec3(1.1f, 1.1f, 1.1f)); // specular lighting doesn't have full effect on this object's material
+	planeShader.setVec3("material.specular", vec3(0.0f, 0.0f, 0.0f)); // specular lighting doesn't have full effect on this object's material
 	planeShader.setFloat("material.shininess", 32.0f);
 
 	mat4 House = identity_mat4();
@@ -564,10 +566,6 @@ void display(){
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, House.m);
-
-	glEnable(GL_TEXTURE_2D);
-
-	glActiveTexture(GL_TEXTURE0);
 
 	glBindTexture(GL_TEXTURE_2D, woodTexture);
 
@@ -612,8 +610,6 @@ void display(){
 
 			glUniformMatrix4fv(matrix_location, 1, GL_FALSE, leaves.m);
 
-			glActiveTexture(GL_TEXTURE0);
-
 			glBindTexture(GL_TEXTURE_2D, snowTexture);
 
 			glDrawArrays(GL_TRIANGLES, 3, leaf_data.mPointCount);
@@ -627,8 +623,7 @@ void display(){
 		planeShader.setFloat("material.shininess", 32.0f);
 		
 		mat4 snowman = identity_mat4();
-		snowman = translate(snowman, vec3(-75.0f+i*20, 0.0f, 0.0f));
-		snowman = translate(snowman, vec3(0.0f, 0.0f, forward_x));
+		snowman = translate(snowman, vec3(-75.0f+i*20, 0.0f, forward_x));
 		glEnableVertexAttribArray(loc1);
 		glBindBuffer(GL_ARRAY_BUFFER, snowman_vp_vbo);
 		glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -640,15 +635,13 @@ void display(){
 		glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
 
-		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, snowManTexture);
 
 		glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
 
-		planeShader.setInt("material.diffuse", 0);
+		planeShader.setInt("material.diffuse", 0.3);
 		mat4 arms = identity_mat4();
-		arms = translate(arms, vec3(0.0f, forward_z, 0.0f));
-		arms = rotate_z_deg(arms, rotate_x);
+		arms = rotate_z_deg(arms, rotate_z);
 		arms = snowman * arms;
 
 		glEnableVertexAttribArray(loc1);
@@ -662,14 +655,12 @@ void display(){
 		glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		glUniformMatrix4fv(matrix_location, 1, GL_FALSE, arms.m);
 
-		glActiveTexture(GL_TEXTURE0);
-
 		glBindTexture(GL_TEXTURE_2D, barkTexture);
 
 		glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
 
 		planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
-		planeShader.setVec3("material.specular", vec3(1.0f, 1.0f, 1.0f)); // specular lighting doesn't have full effect on this object's material
+		planeShader.setVec3("material.specular", vec3(1.0f, 1.0f, 1.0f)); 
 		planeShader.setFloat("material.shininess", 100.0f);
 
 		mat4 hat = identity_mat4();
@@ -709,20 +700,20 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 3, fire_data.mPointCount);
 
-	glDepthFunc(GL_LEQUAL);
+	
 
 	skyboxShader.use();
 	mat4 skyView = skyCamera.GetViewMatrix();
 	matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
 	skyboxShader.setMat4("view", skyView);
 	skyboxShader.setMat4("proj", persp_proj);
-	skybox.draw(skyboxShader, matrix_location);
-	glDepthFunc(GL_LESS);
+	skybox.draw();
 
-	glEnd();
+	glUseProgram(planeShader.ID);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, snowManTexture);
 
 	snow.drawRain();
-	glutPostRedisplay();
 
 	glutSwapBuffers();
 }
@@ -749,20 +740,19 @@ void updateScene() {
 		if (forward_z > 0.5f || forward_z < -0.5f) {
 			x = -x;
 		}
-		if (rotate_x > 4 || rotate_x < -4) {
+		if (rotate_z > 4 || rotate_z < -4) {
 			z = -z;
 		}
-		//forward_z += x * delta;
-		rotate_x += z * delta;
+		forward_z += x * delta;
+		rotate_z += z * delta;
 		if (forward_x > 40.0f || forward_x < 0.f) {
 			y = -y;
 		}
 		forward_x += y * delta;
 		angle += 1.0f;
-		//rotate_x += 1.0f;
 	}
 	
-	// Draw the next framew
+	// Draw the next frame
 	glutPostRedisplay();
 }
 
@@ -808,8 +798,6 @@ void keyboard(unsigned char key, int x, int y)
 		ambient = 0.0f;
 		diffuse = 0.0f;
 	}
-
-
 }
 int startX, startY, tracking = 0;
 
@@ -864,16 +852,13 @@ void mouseCallback(int xposIn, int yposIn) {
 void init()
 {
 	skybox = Skybox();
+
 	
-	// Set up the shaders
-	//snowShader = CompileShaders(snowShader, "Shaders/simpleVertexShader.txt", "Shaders/simpleFragmentShader.txt");
-	//snowShader = CompileShaders(snowShader, "Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
-	//planeShader = Shader("Shaders/vs.txt", "Shaders/fs.txt");
 	planeShader = Shader("Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
 	skyboxShader = Shader("Shaders/skyVS.txt", "Shaders/skyFS.txt");
 
-	skyboxShader.use();
-	skyboxShader.setInt("skybox", 1);
+	//skyboxShader.use();
+	//skyboxShader.setInt("skybox", 1);
 
 	snowTexture = loadTexture("snowyground.jpg");
 	snowManTexture = loadTexture("snow.jpg");
@@ -883,11 +868,8 @@ void init()
 	houseTexture = loadTexture("farmhouse.jpg");
 	fireTexture = loadTexture("campfire.png");
 
+	//heightmap = HeightMap();
 	snow = Snow();
-
-	glClearColor(0.0, 0.0, 0.0, 0.0);
-	glMatrixMode(GL_PROJECTION);
-		
 	generateObjectBufferMesh();
 	
 }
@@ -899,26 +881,33 @@ int main(int argc, char** argv){
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
 	glutInitWindowSize(width, height);
-    glutCreateWindow("Winter Wonderland");
+	glutInitWindowPosition(0, 0);
+
+	glutCreateWindow("Winter Wonderland");
 	// Tell glut where the display function is
+	
+	glEnable(GL_BLEND); //Enable blending.
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Set up your objects and shaders
+	
+	// A call to glewInit() must be done after glut is initialized!
 	glutDisplayFunc(display);
 	glutIdleFunc(updateScene);
 	glutKeyboardFunc(keyboard);
 	glutPassiveMotionFunc(mouseCallback);
 	glutMouseFunc(mouse);
-	glEnable(GL_BLEND); //Enable blending.
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	 // A call to glewInit() must be done after glut is initialized!
 	glewExperimental = GL_TRUE; //for non-lab machines, this line gives better modern GL support
-    GLenum res = glewInit();
+	GLenum res = glewInit();
 	// Check for any errors
-    if (res != GLEW_OK) {
-      fprintf(stderr, "Error: '%s'\n", glewGetErrorString(res));
-      return 1;
-    }
-	// Set up your objects and shaders
+	if (res != GLEW_OK) {
+		fprintf(stderr, "Error: '%s'\n", glewGetErrorString(res));
+		return 1;
+	}
+
 	init();
+
 	// Begin infinite event loop
 	glutMainLoop();
-    return 0;
+	return 0;
 }

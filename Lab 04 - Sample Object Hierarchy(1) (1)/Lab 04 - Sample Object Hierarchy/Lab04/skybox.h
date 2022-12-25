@@ -13,9 +13,8 @@ class Skybox {
 public:
 	Skybox();
 	unsigned int loadCubemap(std::vector<std::string> faces);
-	void draw(Shader shader, GLuint mat);
-	void draw(Shader shader, mat4 view, mat4 persp_proj);
-	void GenObjectBuffer(Shader shader);
+	void draw();
+	void GenObjectBuffer();
 private:
 	unsigned int vao, vbo = 0;
 	unsigned int texture;
