@@ -1,5 +1,4 @@
 #version 330
-in vec3 position_eye, normal_eye;
 in vec3 LightIntensity;
 in vec3 FragPos;
 in vec3 Normal;
@@ -56,7 +55,7 @@ struct SpotLight {
     vec3 specular;       
 };
 
-#define NR_POINT_LIGHTS 3
+#define NR_POINT_LIGHTS 4
 
 uniform Light light;
 uniform DirLight dirLight;
@@ -69,12 +68,28 @@ uniform vec3 viewPos;
 uniform vec3 lightColor;
 uniform vec3 objectColor;
 
+uniform vec3 position_eye;
+uniform int fog;
+
 out vec4 fragment_colour;
 
 // function prototypes
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
+
+vec4  fog_colour = vec4(0.4, 0.4, 0.4, 1.0);
+float density = 0.03;
+
+float getFogFactor()
+{
+      float dist = distance(position_eye, FragPos);
+	float result = 0.0;
+	result = exp(-pow(density * dist, 2.0));
+	
+	result = clamp(result, 0.0, 1.0);
+	return result;
+}
 
 void main(){
 	// properties
@@ -84,13 +99,7 @@ void main(){
 	vec4 texColor = texture(material.diffuse, TexCoord);
     if(texColor.a < 0.1)
         discard;
-    
-    // == =====================================================
-    // Our lighting is set up in 3 phases: directional, point lights and an optional flashlight
-    // For each phase, a calculate function is defined that calculates the corresponding color
-    // per lamp. In the main() function we take all the calculated colors and sum them up for
-    // this fragment's final color.
-    // == =====================================================
+ 
     // phase 1: directional lighting
     vec3 result = CalcDirLight(dirLight, norm, viewDir);
     // phase 2: point lights
@@ -100,6 +109,11 @@ void main(){
     //result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
     
     gl_FragColor = vec4(result, 1.0);
+    
+    if (fog == 1) {
+       gl_FragColor = mix(fog_colour, gl_FragColor, getFogFactor());
+    }
+    
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)

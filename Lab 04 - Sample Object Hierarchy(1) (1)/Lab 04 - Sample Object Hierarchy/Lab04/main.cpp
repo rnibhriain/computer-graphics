@@ -441,6 +441,9 @@ float spec = 1.0f;
 
 unsigned int VAO;
 
+int fog = 0;
+bool startSnow = false;
+
 vec3 lightPositions[] = {
 	vec3(0.0f, 10.0f, -15.0f),
 	vec3(15.0f, 6.0f, 10.0f),
@@ -453,7 +456,7 @@ void display(){
 	// tell GL to only draw onto a pixel if the shape is closer to the viewer
 	glEnable(GL_DEPTH_TEST); // enable depth-testing
 	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
-	glClearColor(0.f, 0.0f, 0.0f, 0.0f);
+	glClearColor(0.4, 0.4, 0.4, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glUseProgram(planeShader.ID);
@@ -523,8 +526,11 @@ void display(){
 
 	planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
 	planeShader.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f)); // specular lighting doesn't have full effect on this object's material
-	planeShader.setFloat("material.shininess", 30.0f);
+	planeShader.setFloat("material.shininess", 10.0f);
+	planeShader.setFloat("material.diffuse", 0.8f);
 
+	planeShader.setVec3("position_eye", camera.Position);
+	planeShader.setInt("fog", fog);
 
 	mat4 Plane = identity_mat4();
 	Plane = translate(Plane, vec3(5.0f, 0.0f, 0.0f));
@@ -702,18 +708,25 @@ void display(){
 
 	
 
-	skyboxShader.use();
-	mat4 skyView = skyCamera.GetViewMatrix();
-	matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
-	skyboxShader.setMat4("view", skyView);
-	skyboxShader.setMat4("proj", persp_proj);
-	skybox.draw();
+	
 
-	glUseProgram(planeShader.ID);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, snowManTexture);
+	if (fog == 0) {
+		skyboxShader.use();
+		mat4 skyView = skyCamera.GetViewMatrix();
+		matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
+		skyboxShader.setMat4("view", skyView);
+		skyboxShader.setMat4("proj", persp_proj);
+		skybox.draw();
+	}
+	
+	if (startSnow) {
+		glUseProgram(planeShader.ID);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, snowManTexture);
 
-	snow.drawRain();
+		snow.drawRain();
+	}
+	
 
 	glutSwapBuffers();
 }
@@ -773,6 +786,17 @@ void keyboard(unsigned char key, int x, int y)
 	}
 	if (key == 't') {
 		start = !start;
+	}
+	if (key == 'f') {
+		if (fog == 0) {
+			fog = 1;
+		}
+		else {
+			fog = 0;
+		}
+	}
+	if (key == 'h') {
+		startSnow = !startSnow;
 	}
 
 	if (key == 'r') {
