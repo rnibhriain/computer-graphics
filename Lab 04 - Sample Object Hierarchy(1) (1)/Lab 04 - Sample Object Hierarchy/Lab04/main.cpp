@@ -435,6 +435,8 @@ GLfloat forward_z = 0;
 GLfloat angle = 0;
 float rotate_z = 1;
 
+GLfloat breeze = 0;
+
 float ambient = 0.5f;
 float diffuse = 0.4f;
 float spec = 1.0f;
@@ -602,6 +604,7 @@ void display(){
 			glDrawArrays(GL_TRIANGLES, 3, bark_data.mPointCount);
 
 			mat4 leaves = identity_mat4();
+			leaves = rotate_z_deg(leaves, breeze);
 			leaves = bark * leaves;
 
 			glEnableVertexAttribArray(loc1);
@@ -738,6 +741,8 @@ float y = 3.0f;
 float z = 10.0f;
 float  delta = 0;
 
+GLfloat treeRotate = 0.1;
+
 void updateScene() {	
 
 		// Wait until at least 16ms passed since start of last frame (Effectively caps framerate at ~60fps)
@@ -747,6 +752,10 @@ void updateScene() {
 	if (delta > 0.03f)
 		delta = 0.03f;
 	last_time = curr_time;
+
+	breeze += treeRotate * delta;
+	if (fmodf(breeze, 1.0f) > 0) treeRotate = -0.5f;
+	if (breeze / 1.0f <= -1) treeRotate = 0.5f;
 	if (start)
 	{	
 		
@@ -877,12 +886,8 @@ void init()
 {
 	skybox = Skybox();
 
-	
 	planeShader = Shader("Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
 	skyboxShader = Shader("Shaders/skyVS.txt", "Shaders/skyFS.txt");
-
-	//skyboxShader.use();
-	//skyboxShader.setInt("skybox", 1);
 
 	snowTexture = loadTexture("snowyground.jpg");
 	snowManTexture = loadTexture("snow.jpg");
@@ -892,7 +897,6 @@ void init()
 	houseTexture = loadTexture("farmhouse.jpg");
 	fireTexture = loadTexture("campfire.png");
 
-	//heightmap = HeightMap();
 	snow = Snow();
 	generateObjectBufferMesh();
 	

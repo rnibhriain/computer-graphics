@@ -85,7 +85,7 @@ float getFogFactor()
 {
       float dist = distance(position_eye, FragPos);
 	float result = 0.0;
-	result = exp(-pow(density * dist, 2.0));
+	result = exp(-pow(density * dist, 3.0));
 	
 	result = clamp(result, 0.0, 1.0);
 	return result;

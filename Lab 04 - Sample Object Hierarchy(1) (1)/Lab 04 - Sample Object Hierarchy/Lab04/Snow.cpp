@@ -1,6 +1,6 @@
 #include "Snow.h"
 
-#define RAINSIZE 50
+#define RAINSIZE 5000
 int winWidth = 1000, winHeight = 1000;
 int counter = 0;
 time_t t;
