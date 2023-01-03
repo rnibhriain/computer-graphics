@@ -1,25 +1,22 @@
 //Some Windows Headers (For Time, IO, etc.)
 #include <windows.h>
 #include <mmsystem.h>
-
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <iostream>
 #include "camera.h"
 #include "maths_funcs.h" //Anton's math class
-#include "teapot.h" // teapot mesh
 #include <string> 
 #include <fstream>
 #include <iostream>
 #include <math.h>
-
 #include "Snow.h"
 
 // loading textures
 #define STB_IMAGE_IMPLEMENTATION
+
 #include "stb_image.h"
 #include <sstream>
-
 #include "model.h"
 #include "shader.h"
 #include "skybox.h"
@@ -27,12 +24,10 @@
 
 
 Snow snow;
-
 Shader planeShader;
 Shader skyboxShader;
-
+//Shader snowShader;
 Skybox skybox;
-
 HeightMap heightmap;
 
 using namespace std;
@@ -461,6 +456,8 @@ void display(){
 	glClearColor(0.4, 0.4, 0.4, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	
+
 	glUseProgram(planeShader.ID);
 
 	planeShader.setVec3("viewPos", camera.Position);
@@ -509,7 +506,6 @@ void display(){
 	planeShader.setFloat("pointLights[1].quadratic", 0.002);
 
 
-
 	planeShader.setVec3("pointLights[2].position", lightPositions[2]);
 	planeShader.setVec3("pointLights[2].ambient", vec3(ambient, ambient, ambient));
 	planeShader.setVec3("pointLights[2].diffuse", vec3(diffuse, diffuse, diffuse));
@@ -517,6 +513,7 @@ void display(){
 	planeShader.setFloat("pointLights[2].constant", 1.0f);
 	planeShader.setFloat("pointLights[2].linear", 0.014);
 	planeShader.setFloat("pointLights[2].quadratic", 0.0002);
+
 
 	planeShader.setVec3("pointLights[3].position", lightPositions[3]);
 	planeShader.setVec3("pointLights[3].ambient", vec3(ambient, ambient, ambient));
@@ -529,7 +526,7 @@ void display(){
 	planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
 	planeShader.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f)); // specular lighting doesn't have full effect on this object's material
 	planeShader.setFloat("material.shininess", 10.0f);
-	planeShader.setFloat("material.diffuse", 0.8f);
+	planeShader.setFloat("material.diffuse", 0.01f);
 
 	planeShader.setVec3("position_eye", camera.Position);
 	planeShader.setInt("fog", fog);
@@ -556,9 +553,14 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 3, plane_data.mPointCount);
 
-	planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
-	planeShader.setVec3("material.specular", vec3(0.0f, 0.0f, 0.0f)); // specular lighting doesn't have full effect on this object's material
-	planeShader.setFloat("material.shininess", 32.0f);
+	if (startSnow) {
+
+		snow.drawRain();
+	}
+
+	planeShader.setVec3("material.ambient", vec3(0.7f, 0.7f, 0.7f));
+	planeShader.setVec3("material.specular", vec3(0.0f, 0.0f, 0.0f)); // specular lighting any effect on wood
+	planeShader.setFloat("material.shininess", 15.0f);
 
 	mat4 House = identity_mat4();
 	House = translate(House, vec3(50.0f, 0.0f, 50.0f));
@@ -583,6 +585,10 @@ void display(){
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 9; j++) {
 
+			planeShader.setVec3("material.ambient", vec3(0.7f, 0.7f, 0.7f));
+			planeShader.setVec3("material.specular", vec3(0.0f, 0.0f, 0.0f)); // specular lighting any effect on wood
+			planeShader.setFloat("material.shininess", 15.0f);
+
 			mat4 bark = identity_mat4();
 			bark = translate(bark, vec3(-75.0f + j * 20, 0.0f, -15.0f * (i + 1)));
 
@@ -602,6 +608,10 @@ void display(){
 			glBindTexture(GL_TEXTURE_2D, woodTexture);
 
 			glDrawArrays(GL_TRIANGLES, 3, bark_data.mPointCount);
+
+			planeShader.setVec3("material.ambient", vec3(0.7f, 0.7f, 0.7f));
+			planeShader.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f)); // specular lighting doesn't have any effect on wood
+			planeShader.setFloat("material.shininess", 100.0f);
 
 			mat4 leaves = identity_mat4();
 			leaves = rotate_z_deg(leaves, breeze);
@@ -627,9 +637,9 @@ void display(){
 	}
 
 	for (int i = 0; i < 9; i++) {
-		planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
-		planeShader.setVec3("material.specular", vec3(0.1f, 0.1f, 0.1f)); // specular lighting doesn't have full effect on this object's material
-		planeShader.setFloat("material.shininess", 32.0f);
+		planeShader.setVec3("material.ambient", vec3(0.3f, 0.3f, 0.3f));
+		planeShader.setVec3("material.specular", vec3(0.2f, 0.2f, 0.2f)); // specular lighting doesn't have full effect on this object's material
+		planeShader.setFloat("material.shininess", 20.0f);
 		
 		mat4 snowman = identity_mat4();
 		snowman = translate(snowman, vec3(-75.0f+i*20, 0.0f, forward_x));
@@ -648,6 +658,9 @@ void display(){
 
 		glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
 
+		planeShader.setVec3("material.ambient", vec3(0.5f, 0.5f, 0.5f));
+		planeShader.setVec3("material.specular", vec3(0.1f, 0.1f, 0.1f)); // specular lighting doesn't have full effect on this object's material
+		planeShader.setFloat("material.shininess", 10.0f);
 		planeShader.setInt("material.diffuse", 0.3);
 		mat4 arms = identity_mat4();
 		arms = rotate_z_deg(arms, rotate_z);
@@ -668,7 +681,7 @@ void display(){
 
 		glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
 
-		planeShader.setVec3("material.ambient", vec3(1.0f, 1.0f, 1.0f));
+		planeShader.setVec3("material.ambient", vec3(0.0f, 0.0f, 0.0f));
 		planeShader.setVec3("material.specular", vec3(1.0f, 1.0f, 1.0f)); 
 		planeShader.setFloat("material.shininess", 100.0f);
 
@@ -722,13 +735,7 @@ void display(){
 		skybox.draw();
 	}
 	
-	if (startSnow) {
-		glUseProgram(planeShader.ID);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, snowManTexture);
-
-		snow.drawRain();
-	}
+	
 	
 
 	glutSwapBuffers();

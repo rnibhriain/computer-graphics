@@ -1,6 +1,6 @@
 #include "Snow.h"
 
-#define RAINSIZE 5000
+#define RAINSIZE 500
 int winWidth = 1000, winHeight = 1000;
 int counter = 0;
 time_t t;
@@ -21,11 +21,11 @@ drop rain[RAINSIZE];
 
 void drawParticleShape(int i) {
     glBegin(GL_POINTS);
-    glVertex3d(rain[i].x, rain[i].y, rain[i].z);
+    glVertex2d(rain[i].x, rain[i].y);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3d(rain[i].x, rain[i].y, rain[i].z);
-    glVertex3d(rain[i].x, rain[i].y + rain[i].radius * 2, rain[i].z);
+    glVertex2d(rain[i].x, rain[i].y);
+    glVertex2d(rain[i].x, rain[i].y + rain[i].radius * 2);
     glEnd();
 }
 
@@ -61,10 +61,8 @@ void Snow::drawRain() {
 
 
 Snow::Snow() {
-
-    glClearColor(0.0, 0.0, 0.0, 0.0); // set what colour you want the background to be
+    // set what colour you want the background to be
     glMatrixMode(GL_PROJECTION); // set the matrix mode, we will look at this later
-    gluOrtho2D(0.0, winWidth, 0.0, winHeight);
 
     srand((unsigned)time(&t));
     for (int i = 0; i < RAINSIZE; i++) {
@@ -82,7 +80,4 @@ Snow::Snow() {
     }
     calcFPS();
     glFlush();
-    glClearColor(0.0, 0.0, 0.0, 0.0); // set what colour you want the background to be
-    glMatrixMode(GL_PROJECTION); // set the matrix mode, we will look at this later
-    gluOrtho2D(0.0, winWidth, 0.0, winHeight);
 }

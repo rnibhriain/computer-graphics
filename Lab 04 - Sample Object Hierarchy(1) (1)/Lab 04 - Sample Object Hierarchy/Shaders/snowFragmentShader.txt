@@ -5,7 +5,7 @@ in vec3 Normal;
 in vec2 TexCoord;
 
 struct Material {
-    //vec3 ambient;
+    vec3 ambient;
     //vec3 diffuse;
 	sampler2D diffuse;
     vec3 specular;    
@@ -73,7 +73,7 @@ uniform int fog;
 
 out vec4 fragment_colour;
 
-// function prototypes
+// function
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
