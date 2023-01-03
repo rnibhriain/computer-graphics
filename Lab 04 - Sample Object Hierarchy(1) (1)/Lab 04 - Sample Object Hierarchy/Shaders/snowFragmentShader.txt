@@ -70,6 +70,7 @@ uniform vec3 objectColor;
 
 uniform vec3 position_eye;
 uniform int fog;
+uniform float transparency;
 
 out vec4 fragment_colour;
 
@@ -108,7 +109,7 @@ void main(){
     // phase 3: spot light
     //result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
     
-    gl_FragColor = vec4(result, 1.0);
+    gl_FragColor = vec4(result, transparency);
     
     if (fog == 1) {
        gl_FragColor = mix(fog_colour, gl_FragColor, getFogFactor());

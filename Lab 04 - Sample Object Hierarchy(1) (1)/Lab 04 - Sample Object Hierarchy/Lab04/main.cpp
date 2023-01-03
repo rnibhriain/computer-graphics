@@ -40,6 +40,7 @@ unsigned int skyTexture;
 unsigned int barkTexture;
 unsigned int houseTexture;
 unsigned int fireTexture;
+unsigned int domeTexture;
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -111,12 +112,17 @@ MESH TO LOAD
 #define BARK "bark.obj"
 #define HOUSE "house.obj"
 #define FIRE "fire.obj"
+#define DOME "Dome.obj"
 
 /*----------------------------------------------------------------------------
 ----------------------------------------------------------------------------*/
 unsigned int plane_vp_vbo = 0;
 unsigned int plane_vn_vbo = 0;
 unsigned int plane_vt_vbo = 0;
+
+unsigned int dome_vp_vbo = 0;
+unsigned int dome_vn_vbo = 0;
+unsigned int dome_vt_vbo = 0;
 
 unsigned int snowman_vp_vbo = 0;
 unsigned int snowman_vn_vbo = 0;
@@ -148,8 +154,6 @@ unsigned int fire_vt_vbo = 0;
 
 
 using namespace std;
-GLuint shaderProgramID;
-GLuint snowShader;
 
 ModelData mesh_data;
 ModelData plane_data;
@@ -159,8 +163,7 @@ ModelData leaf_data;
 ModelData bark_data;
 ModelData house_data;
 ModelData fire_data;
-
-unsigned int mesh_vao = 0;
+ModelData dome_data;
 
 
 // Macro for indexing vertex buffer
@@ -269,6 +272,8 @@ void generateObjectBufferMesh() {
 
 	fire_data = load_mesh(FIRE);
 
+	dome_data = load_mesh(DOME);
+
 	plane_vp_vbo = 0;
 	glGenBuffers(1, &plane_vp_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vp_vbo);
@@ -285,6 +290,21 @@ void generateObjectBufferMesh() {
 	glBindBuffer(GL_ARRAY_BUFFER, plane_vt_vbo);
 	glBufferData(GL_ARRAY_BUFFER, plane_data.mPointCount * sizeof(vec2), &plane_data.mTextureCoords[0], GL_STATIC_DRAW);
 	
+	dome_vp_vbo = 0;
+	glGenBuffers(1, &dome_vp_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, dome_vp_vbo);
+	glBufferData(GL_ARRAY_BUFFER, dome_data.mPointCount * sizeof(vec3), &dome_data.mVertices[0], GL_STATIC_DRAW);
+
+	dome_vn_vbo = 0;
+	glGenBuffers(1, &dome_vn_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, dome_vn_vbo);
+	glBufferData(GL_ARRAY_BUFFER, dome_data.mPointCount * sizeof(vec3), &dome_data.mNormals[0], GL_STATIC_DRAW);
+
+
+	dome_vt_vbo = 0;
+	glGenBuffers(1, &dome_vt_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, dome_vt_vbo);
+	glBufferData(GL_ARRAY_BUFFER, dome_data.mPointCount * sizeof(vec2), &dome_data.mTextureCoords[0], GL_STATIC_DRAW);
 
 	snowman_vp_vbo = 0;
 	glGenBuffers(1, &snowman_vp_vbo);
@@ -439,7 +459,7 @@ float spec = 1.0f;
 unsigned int VAO;
 
 int fog = 0;
-bool startSnow = false;
+bool snowGlobeMode = false;
 
 vec3 lightPositions[] = {
 	vec3(0.0f, 10.0f, -15.0f),
@@ -455,8 +475,7 @@ void display(){
 	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
 	glClearColor(0.4, 0.4, 0.4, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	
+	glMatrixMode(GL_MODELVIEW);
 
 	glUseProgram(planeShader.ID);
 
@@ -475,7 +494,7 @@ void display(){
 	glBindFragDataLocation(planeShader.ID, 1, "fragment_colour");
 
 	mat4 view = camera.GetViewMatrix();
-	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 100.0f);
+	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 500.0f);
 	mat4 model = identity_mat4();
 	view = translate(view, vec3(0.0f, 0.0f, -60.0f));
 
@@ -531,6 +550,8 @@ void display(){
 	planeShader.setVec3("position_eye", camera.Position);
 	planeShader.setInt("fog", fog);
 
+	planeShader.setFloat("transparency", 1.0);
+
 	mat4 Plane = identity_mat4();
 	Plane = translate(Plane, vec3(5.0f, 0.0f, 0.0f));
 	glEnableVertexAttribArray(loc1);
@@ -553,9 +574,11 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 3, plane_data.mPointCount);
 
-	if (startSnow) {
+	
 
-		snow.drawRain();
+	if (snowGlobeMode) {
+
+		//snow.drawRain();
 	}
 
 	planeShader.setVec3("material.ambient", vec3(0.7f, 0.7f, 0.7f));
@@ -722,8 +745,34 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 3, fire_data.mPointCount);
 
-	
+	if (snowGlobeMode) {
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDisable(GL_POLYGON_SMOOTH);
+		planeShader.setFloat("transparency", 0.25);
+		mat4 Dome = identity_mat4();
+		Dome = translate(Dome, vec3(5.0f, 0.0f, 0.0f));
+		Dome = scale(Dome, vec3(2.5, 2.5, 2.5));
+		glEnableVertexAttribArray(loc1);
+		glBindBuffer(GL_ARRAY_BUFFER, dome_vp_vbo);
+		glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+		glEnableVertexAttribArray(loc2);
+		glBindBuffer(GL_ARRAY_BUFFER, dome_vn_vbo);
+		glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+		glEnableVertexAttribArray(loc3);
+		glBindBuffer(GL_ARRAY_BUFFER, dome_vt_vbo);
+		glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 
+		glUniformMatrix4fv(matrix_location, 1, GL_FALSE, Dome.m);
+
+		glEnable(GL_TEXTURE_2D);
+
+		glActiveTexture(GL_TEXTURE0);
+
+		glBindTexture(GL_TEXTURE_2D, snowTexture);
+
+		glDrawArrays(GL_TRIANGLES, 3, dome_data.mPointCount);
+	}
 	
 
 	if (fog == 0) {
@@ -734,7 +783,6 @@ void display(){
 		skyboxShader.setMat4("proj", persp_proj);
 		skybox.draw();
 	}
-	
 	
 	
 
@@ -812,7 +860,7 @@ void keyboard(unsigned char key, int x, int y)
 		}
 	}
 	if (key == 'h') {
-		startSnow = !startSnow;
+		snowGlobeMode = !snowGlobeMode;
 	}
 
 	if (key == 'r') {
@@ -903,6 +951,7 @@ void init()
 	barkTexture = loadTexture("bark.jpg");
 	houseTexture = loadTexture("farmhouse.jpg");
 	fireTexture = loadTexture("campfire.png");
+	domeTexture = loadTexture("Snowglobe.png");
 
 	snow = Snow();
 	generateObjectBufferMesh();
