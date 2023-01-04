@@ -9,8 +9,8 @@ float rotationAngle = 0;
 unsigned int VBO;
 
 struct drop {
-    float x = 500;
-    float y = 500;
+    float x = 1000;
+    float y = 1000;
     float z = 1000;
     float inc = 0.01;
     float radius = 5;
@@ -59,18 +59,16 @@ void Snow::drawRain() {
         drawDrop(i);
     }
     calcFPS();
-    glFlush();
+    
 }
 
 
 Snow::Snow() {
-
     srand((unsigned)time(&t));
     for (int i = 0; i < RAINSIZE; i++) {
-        rain[i].x = rand() % 100;
-        rain[i].y = rand() % 100;
-        rain[i].z = rand() % 100;
-        rain[i].inc = 0.1 + (float)(rand() % 100) / 1000.0;
+        rain[i].x = rand() % winWidth;
+        rain[i].y = rand() % winHeight;
+        rain[i].inc = 1.5 + (float)(rand() % 100) / 1000.0;
         rain[i].radius = (float)(rand() % 8);
         rain[i].scale = (float)(rand() % 20000) / 1000.0;
         rain[i].rotationAngle = (float)(rand() % 3000) / 1000.0;

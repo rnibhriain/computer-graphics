@@ -482,6 +482,9 @@ void display(){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 
+	glUseProgram(0);
+	snow.drawRain();
+
 	glUseProgram(planeShader.ID);
 
 	planeShader.setVec3("viewPos", camera.Position);
@@ -850,10 +853,10 @@ void display(){
 		skybox.draw();
 	}
 
-	if (snowGlobeMode) {
-		snowShader.use();
-		snow.drawRain();
-	}
+	snowShader.use();
+	snowShader.setMat4("view", view);
+	snowShader.setMat4("proj", persp_proj);
+	
 
 	glutSwapBuffers();
 }
@@ -910,6 +913,7 @@ void updateScene() {
 		rotatingSnowMan += direction; 
 	}
 	
+	glFlush();
 	// Draw the next frame
 	glutPostRedisplay();
 }
