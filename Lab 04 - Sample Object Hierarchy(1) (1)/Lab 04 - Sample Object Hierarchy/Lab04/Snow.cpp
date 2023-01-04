@@ -22,12 +22,18 @@ struct drop {
 drop rain [RAINSIZE];
 
 void drawParticleShape(int i) {
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
+    glDisable(GL_LIGHTING);
+    glColor4f(0, 0.0, 0.25, 0.05);
+    glDisable(GL_TEXTURE_2D);
     glBegin(GL_POINTS);
-    glVertex2d(rain[i].y, rain[i].y);
+      //  glVertex2d(rain[i].y, rain[i].y);
     glEnd();
     glBegin(GL_LINES);
-    glVertex2d(rain[i].y, rain[i].y);
-    glVertex2d(rain[i].y, rain[i].y + rain[i].radius * 2);
+        glVertex2d(rain[i].y, rain[i].y);
+        glVertex2d(rain[i].y, rain[i].y+4);
+        glColor4f(1, 1, 1, 1);
     glEnd();
 }
 
@@ -36,7 +42,7 @@ void drawDrop(int i) {
     glLineWidth(2);
     drawParticleShape(i);
     rain[i].y -= rain[i].inc;
-    if (rain[i].y < -20) {
+    if (rain[i].y < -500) {
         rain[i].y = winHeight;
     }
 }
@@ -69,7 +75,7 @@ Snow::Snow() {
         rain[i].inc = 1.1 + (float)(rand() % 100) / 1000.0;
         rain[i].radius = (float)(rand() % 8);
         rain[i].scale = (float)(rand() % 20000) / 1000.0;
-        rain[i].rotationAngle = (float)(rand() % 3000) / 1000.0;
+        //rain[i].rotationAngle = (float)(rand() % 3000) / 1000.0;
         rain[i].rotationInc = (float)(rand() % 100) / 1000.0;
         if ((rand() % 100) > 50) {
             rain[i].rotationInc = -rain[i].rotationInc;

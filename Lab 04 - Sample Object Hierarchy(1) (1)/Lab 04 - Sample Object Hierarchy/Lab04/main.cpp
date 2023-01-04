@@ -483,6 +483,8 @@ void display(){
 	
 	glMatrixMode(GL_PROJECTION);
 
+	glDisable(GL_TEXTURE_2D);
+
 	glUseProgram(0);
 	snow.drawRain();
 
