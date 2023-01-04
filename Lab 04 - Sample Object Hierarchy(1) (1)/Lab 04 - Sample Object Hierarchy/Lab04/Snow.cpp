@@ -9,8 +9,8 @@ float rotationAngle = 0;
 unsigned int VBO;
 
 struct drop {
-    float x = 1000;
-    float y = 1000;
+    float x = 400;
+    float y = 400;
     float z = 1000;
     float inc = 0.01;
     float radius = 0.5;
@@ -25,21 +25,20 @@ void drawParticleShape(int i) {
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     glEnable(GL_COLOR_MATERIAL);
     glDisable(GL_LIGHTING);
-    glColor4f(0, 0.0, 0.25, 0.05);
+    glColor4f(0, 0.0, 0.25, 0.25);
     glDisable(GL_TEXTURE_2D);
     glBegin(GL_POINTS);
-      //  glVertex2d(rain[i].y, rain[i].y);
     glEnd();
     glBegin(GL_LINES);
         glVertex2d(rain[i].y, rain[i].y);
-        glVertex2d(rain[i].y, rain[i].y+4);
+        glVertex2d(rain[i].y, rain[i].y+0.015);
         glColor4f(1, 1, 1, 1);
     glEnd();
 }
 
 void drawDrop(int i) {
     glColor3f(1.0, 1.0, 1.0);
-    glLineWidth(2);
+    glLineWidth(3);
     drawParticleShape(i);
     rain[i].y -= rain[i].inc;
     if (rain[i].y < -500) {
