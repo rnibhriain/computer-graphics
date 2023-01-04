@@ -1,6 +1,6 @@
 #include "Snow.h"
 
-#define RAINSIZE 500
+#define RAINSIZE 5555
 int winWidth = 500, winHeight = 500;
 int counter = 0;
 time_t t;
@@ -13,13 +13,13 @@ struct drop {
     float y = 1000;
     float z = 1000;
     float inc = 0.01;
-    float radius = 5;
+    float radius = 3;
     float scale = 1.0;
     float rotationAngle = 0;
     float rotationInc = 1;
 };
 
-drop rain[RAINSIZE];
+drop rain [RAINSIZE];
 
 void drawParticleShape(int i) {
     glBegin(GL_POINTS);
@@ -32,8 +32,8 @@ void drawParticleShape(int i) {
 }
 
 void drawDrop(int i) {
-    glColor3f(255.0, 255.0, 255.0);
-    glLineWidth(2);
+    glColor3f(1.0, 1.0, 1.0);
+    glLineWidth(1);
     drawParticleShape(i);
     rain[i].y -= rain[i].inc;
     if (rain[i].y < 0) {
@@ -54,11 +54,9 @@ void calcFPS() {
 }
 
 void Snow::drawRain() {
-    glMatrixMode(GL_PROJECTION);
     for (int i = 0; i < RAINSIZE; i++) {
         drawDrop(i);
     }
-    calcFPS();
     
 }
 
@@ -77,4 +75,6 @@ Snow::Snow() {
             rain[i].rotationInc = -rain[i].rotationInc;
         }
     }
+    
+
 }
