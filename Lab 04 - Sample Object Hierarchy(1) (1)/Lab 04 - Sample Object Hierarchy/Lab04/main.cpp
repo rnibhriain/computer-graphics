@@ -26,7 +26,7 @@
 Snow snow;
 Shader planeShader;
 Shader skyboxShader;
-//Shader snowShader;
+Shader snowShader;
 Skybox skybox;
 HeightMap heightmap;
 
@@ -468,6 +468,11 @@ vec3 lightPositions[] = {
 	vec3(0.0f, 0.0f, 40.0f)
 };
 
+float rotatingSnowMan = 2;
+float current_x = 0; 
+float current_z = 40;
+
+
 void display(){
 
 	// tell GL to only draw onto a pixel if the shape is closer to the viewer
@@ -494,7 +499,7 @@ void display(){
 	glBindFragDataLocation(planeShader.ID, 1, "fragment_colour");
 
 	mat4 view = camera.GetViewMatrix();
-	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 500.0f);
+	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 800.0f);
 	mat4 model = identity_mat4();
 	view = translate(view, vec3(0.0f, 0.0f, -60.0f));
 
@@ -574,12 +579,71 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 3, plane_data.mPointCount);
 
+	mat4 snowman = identity_mat4();
+	snowman = rotate_y_deg(snowman, rotatingSnowMan);
+	snowman = translate(snowman, vec3(current_x, 0.0f, current_z));
 	
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, snowman_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
 
-	if (snowGlobeMode) {
+	glBindTexture(GL_TEXTURE_2D, snowManTexture);
 
-		//snow.drawRain();
-	}
+	glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
+
+	planeShader.setVec3("material.ambient", vec3(0.5f, 0.5f, 0.5f));
+	planeShader.setVec3("material.specular", vec3(0.1f, 0.1f, 0.1f)); // specular lighting doesn't have full effect on this object's material
+	planeShader.setFloat("material.shininess", 10.0f);
+	planeShader.setInt("material.diffuse", 0.3);
+	mat4 arms = identity_mat4();
+	arms = rotate_z_deg(arms, rotate_z);
+	arms = snowman * arms;
+
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, arms_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, arms.m);
+
+	glBindTexture(GL_TEXTURE_2D, barkTexture);
+
+	glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
+
+	planeShader.setVec3("material.ambient", vec3(0.0f, 0.0f, 0.0f));
+	planeShader.setVec3("material.specular", vec3(1.0f, 1.0f, 1.0f));
+	planeShader.setFloat("material.shininess", 100.0f);
+
+	mat4 hat = identity_mat4();
+	hat = rotate_y_deg(hat, angle);
+	hat = snowman * hat;
+
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vp_vbo);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vn_vbo);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat.m);
+
+	glBindTexture(GL_TEXTURE_2D, hatTexture);
+
+	glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
+
 
 	planeShader.setVec3("material.ambient", vec3(0.7f, 0.7f, 0.7f));
 	planeShader.setVec3("material.specular", vec3(0.0f, 0.0f, 0.0f)); // specular lighting any effect on wood
@@ -728,6 +792,8 @@ void display(){
 		glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 	}
 
+
+
 	mat4 fire = identity_mat4();
 	fire = translate(fire, vec3(30.0f, 2.5f, 30.0f));
 	glEnableVertexAttribArray(loc1);
@@ -783,8 +849,11 @@ void display(){
 		skyboxShader.setMat4("proj", persp_proj);
 		skybox.draw();
 	}
-	
-	
+
+	if (snowGlobeMode) {
+		snowShader.use();
+		snow.drawRain();
+	}
 
 	glutSwapBuffers();
 }
@@ -797,6 +866,8 @@ float z = 10.0f;
 float  delta = 0;
 
 GLfloat treeRotate = 0.1;
+
+float direction = 0.5;
 
 void updateScene() {	
 
@@ -824,9 +895,19 @@ void updateScene() {
 		rotate_z += z * delta;
 		if (forward_x > 40.0f || forward_x < 0.f) {
 			y = -y;
+			direction = -direction;
 		}
 		forward_x += y * delta;
 		angle += 1.0f;
+
+		// snowman dance
+		if (rotatingSnowMan > 180.0f || rotatingSnowMan < -180.0f) {
+			direction = -direction;
+		}
+		
+		current_z += direction/5;
+		current_x += direction/5;
+		rotatingSnowMan += direction; 
 	}
 	
 	// Draw the next frame
@@ -943,6 +1024,7 @@ void init()
 
 	planeShader = Shader("Shaders/snowVertexShader.txt", "Shaders/snowFragmentShader.txt");
 	skyboxShader = Shader("Shaders/skyVS.txt", "Shaders/skyFS.txt");
+	snowShader = Shader("Shaders/simpleVertexShader.txt", "Shaders/simpleFragmentShader.txt");
 
 	snowTexture = loadTexture("snowyground.jpg");
 	snowManTexture = loadTexture("snow.jpg");

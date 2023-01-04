@@ -1,14 +1,16 @@
 #include "Snow.h"
 
 #define RAINSIZE 500
-int winWidth = 1000, winHeight = 1000;
+int winWidth = 500, winHeight = 500;
 int counter = 0;
 time_t t;
 float rotationAngle = 0;
 
+unsigned int VBO;
+
 struct drop {
-    float x = 1000;
-    float y = 1000;
+    float x = 500;
+    float y = 500;
     float z = 1000;
     float inc = 0.01;
     float radius = 5;
@@ -52,6 +54,7 @@ void calcFPS() {
 }
 
 void Snow::drawRain() {
+    glMatrixMode(GL_PROJECTION);
     for (int i = 0; i < RAINSIZE; i++) {
         drawDrop(i);
     }
@@ -61,8 +64,6 @@ void Snow::drawRain() {
 
 
 Snow::Snow() {
-    // set what colour you want the background to be
-    glMatrixMode(GL_PROJECTION); // set the matrix mode, we will look at this later
 
     srand((unsigned)time(&t));
     for (int i = 0; i < RAINSIZE; i++) {
@@ -78,6 +79,4 @@ Snow::Snow() {
             rain[i].rotationInc = -rain[i].rotationInc;
         }
     }
-    calcFPS();
-    glFlush();
 }

@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <GL/glew.h>
 #include <GL/freeglut.h>
+
 
 class Snow {
 public:
