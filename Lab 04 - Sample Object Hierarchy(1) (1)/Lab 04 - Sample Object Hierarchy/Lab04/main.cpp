@@ -480,10 +480,13 @@ void display(){
 	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
 	glClearColor(0.4, 0.4, 0.4, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glMatrixMode(GL_MODELVIEW);
+	
+	glMatrixMode(GL_PROJECTION);
 
 	glUseProgram(0);
 	snow.drawRain();
+
+	glMatrixMode(GL_MODELVIEW);
 
 	glUseProgram(planeShader.ID);
 
@@ -494,7 +497,6 @@ void display(){
 	int view_mat_location = glGetUniformLocation (planeShader.ID, "view");
 	int proj_mat_location = glGetUniformLocation (planeShader.ID, "proj");
 
-	//mat4 projection = perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 	loc1 = glGetAttribLocation(planeShader.ID, "vertex_position");
 	loc2 = glGetAttribLocation(planeShader.ID, "vertex_normal");
 	loc3 = glGetAttribLocation(planeShader.ID, "vertex_texture");
