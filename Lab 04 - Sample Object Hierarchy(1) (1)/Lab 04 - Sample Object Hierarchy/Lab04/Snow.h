@@ -9,7 +9,7 @@
 class Snow {
 public:
 	Snow();
-	void drawRain();
+	void drawSnow();
 private:
 	int winWidth = 1000, winHeight = 1000;
 	int counter = 0;

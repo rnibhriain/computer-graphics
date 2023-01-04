@@ -485,9 +485,39 @@ void display(){
 
 	glDisable(GL_TEXTURE_2D);
 
-	glUseProgram(0);
-	snow.drawRain();
+	if (snowGlobeMode) {
+		glUseProgram(0);
+		snow.drawSnow();
+	}
 
+	glUseProgram(planeShader.ID);
+
+	int matrix_location = glGetUniformLocation(planeShader.ID, "model");
+	int view_mat_location = glGetUniformLocation(planeShader.ID, "view");
+	int proj_mat_location = glGetUniformLocation(planeShader.ID, "proj");
+
+	loc1 = glGetAttribLocation(planeShader.ID, "vertex_position");
+	loc2 = glGetAttribLocation(planeShader.ID, "vertex_normal");
+	loc3 = glGetAttribLocation(planeShader.ID, "vertex_texture");
+
+	glBindFragDataLocation(planeShader.ID, 1, "fragment_colour");
+
+	mat4 view = camera.GetViewMatrix();
+	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 800.0f);
+	mat4 model = identity_mat4();
+	view = translate(view, vec3(0.0f, 0.0f, -60.0f));
+
+	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
+	glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view.m);
+
+	if (fog == 0) {
+		skyboxShader.use();
+		mat4 skyView = skyCamera.GetViewMatrix();
+		matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
+		skyboxShader.setMat4("view", skyView);
+		skyboxShader.setMat4("proj", persp_proj);
+		skybox.draw();
+	}
 	glMatrixMode(GL_MODELVIEW);
 
 	glUseProgram(planeShader.ID);
@@ -495,9 +525,9 @@ void display(){
 	planeShader.setVec3("viewPos", camera.Position);
 
 	//Declare your uniform variables that will be used in your shader
-	int matrix_location = glGetUniformLocation(planeShader.ID, "model");
-	int view_mat_location = glGetUniformLocation (planeShader.ID, "view");
-	int proj_mat_location = glGetUniformLocation (planeShader.ID, "proj");
+	matrix_location = glGetUniformLocation(planeShader.ID, "model");
+	view_mat_location = glGetUniformLocation (planeShader.ID, "view");
+	proj_mat_location = glGetUniformLocation (planeShader.ID, "proj");
 
 	loc1 = glGetAttribLocation(planeShader.ID, "vertex_position");
 	loc2 = glGetAttribLocation(planeShader.ID, "vertex_normal");
@@ -505,9 +535,9 @@ void display(){
 	
 	glBindFragDataLocation(planeShader.ID, 1, "fragment_colour");
 
-	mat4 view = camera.GetViewMatrix();
-	mat4 persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 800.0f);
-	mat4 model = identity_mat4();
+	view = camera.GetViewMatrix();
+	persp_proj = perspective(camera.Zoom, (float)width / (float)height, 0.1f, 800.0f);
+	model = identity_mat4();
 	view = translate(view, vec3(0.0f, 0.0f, -60.0f));
 
 	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
@@ -822,7 +852,7 @@ void display(){
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glDisable(GL_POLYGON_SMOOTH);
-		planeShader.setFloat("transparency", 0.25);
+		planeShader.setFloat("transparency", 0.5);
 		mat4 Dome = identity_mat4();
 		Dome = translate(Dome, vec3(5.0f, 0.0f, 0.0f));
 		Dome = scale(Dome, vec3(2.5, 2.5, 2.5));
@@ -848,18 +878,7 @@ void display(){
 	}
 	
 
-	if (fog == 0) {
-		skyboxShader.use();
-		mat4 skyView = skyCamera.GetViewMatrix();
-		matrix_location = glGetUniformLocation(skyboxShader.ID, "model");
-		skyboxShader.setMat4("view", skyView);
-		skyboxShader.setMat4("proj", persp_proj);
-		skybox.draw();
-	}
-
-	snowShader.use();
-	snowShader.setMat4("view", view);
-	snowShader.setMat4("proj", persp_proj);
+	
 	
 
 	glutSwapBuffers();

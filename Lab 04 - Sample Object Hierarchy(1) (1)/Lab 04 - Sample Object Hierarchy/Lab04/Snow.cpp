@@ -1,48 +1,34 @@
 #include "Snow.h"
 
-#define RAINSIZE 5000
+#define SNOWSIZE 10000
 int winWidth = 500, winHeight = 500;
 int counter = 0;
 time_t t;
-float rotationAngle = 0;
 
 unsigned int VBO;
 
 struct drop {
     float x = 400;
     float y = 400;
-    float z = 1000;
     float inc = 0.01;
     float radius = 0.5;
-    float scale = 1.0;
-    float rotationAngle = 0;
-    float rotationInc = 1;
 };
 
-drop rain [RAINSIZE];
+drop snow [SNOWSIZE];
 
 void drawParticleShape(int i) {
-    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-    glEnable(GL_COLOR_MATERIAL);
-    glDisable(GL_LIGHTING);
-    glColor4f(0, 0.0, 0.25, 0.25);
-    glDisable(GL_TEXTURE_2D);
-    glBegin(GL_POINTS);
-    glEnd();
     glBegin(GL_LINES);
-        glVertex2d(rain[i].y, rain[i].y);
-        glVertex2d(rain[i].y, rain[i].y+0.015);
-        glColor4f(1, 1, 1, 1);
+    glVertex2d((snow[i].x/500)-1, snow[i].y-2);
+    glVertex2d((snow[i].x / 500) -1, snow[i].y-2 + (snow[i].radius * 2)/1000);
     glEnd();
 }
 
 void drawDrop(int i) {
-    glColor3f(1.0, 1.0, 1.0);
-    glLineWidth(3);
+    glLineWidth(4);
     drawParticleShape(i);
-    rain[i].y -= rain[i].inc;
-    if (rain[i].y < -500) {
-        rain[i].y = winHeight;
+    snow[i].y -= snow[i].inc;
+    if (snow[i].y < -2) {
+        snow[i].y = winHeight;
     }
 }
 
@@ -58,8 +44,8 @@ void calcFPS() {
     frames++;
 }
 
-void Snow::drawRain() {
-    for (int i = 0; i < RAINSIZE; i++) {
+void Snow::drawSnow() {
+    for (int i = 0; i < SNOWSIZE; i++) {
         drawDrop(i);
     }
     
@@ -68,17 +54,12 @@ void Snow::drawRain() {
 
 Snow::Snow() {
     srand((unsigned)time(&t));
-    for (int i = 0; i < RAINSIZE; i++) {
-        rain[i].x = rand() % winWidth;
-        rain[i].y = rand() % winHeight;
-        rain[i].inc = 1.1 + (float)(rand() % 100) / 1000.0;
-        rain[i].radius = (float)(rand() % 8);
-        rain[i].scale = (float)(rand() % 20000) / 1000.0;
-        //rain[i].rotationAngle = (float)(rand() % 3000) / 1000.0;
-        rain[i].rotationInc = (float)(rand() % 100) / 1000.0;
-        if ((rand() % 100) > 50) {
-            rain[i].rotationInc = -rain[i].rotationInc;
-        }
+    for (int i = 0; i < SNOWSIZE; i++) {
+        snow[i].x = i;
+        snow[i].x = rand() % winWidth;
+        snow[i].y = rand() % winHeight;
+        snow[i].inc = 0.0001 + (float)(rand() % 50) / 1000.0;
+        snow[i].radius = (float)(rand() % 8);
     }
     
 
