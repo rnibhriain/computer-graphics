@@ -708,11 +708,11 @@ void display(){
 		snowman = rotate_z_deg(snowman, steps);
 		if (on) {
 			snowman = rotate_y_deg(snowman, 180);
-			snowman = translate(snowman, vec3(-75.0f + (i - 1) * 10, 0.0f, -forward_x));
+			snowman = translate(snowman, vec3(-75.0f + (i - 1) * 10, 0.0f, 40-forward_x));
 		}
 		else {
 			
-			snowman = translate(snowman, vec3(-75.0f + i * 10, 0.0f, 20+ forward_x));
+			snowman = translate(snowman, vec3(-75.0f + i * 10, 0.0f, 60+ forward_x));
 		}
 		
 		glEnableVertexAttribArray(loc1);
@@ -874,7 +874,7 @@ void updateScene() {
 			}
 			else {
 				spin+= 1.0f;
-				if (fmodf(spin,	90.0f) == 0) {
+				if (fmodf(spin+spin,	180.0f) == 0) {
 					
 					turned = !turned;
 				}
