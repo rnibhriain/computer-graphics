@@ -188,7 +188,7 @@ ModelData load_mesh(const char* file_name) {
 	/* they're in the right position.                                 */
 	const aiScene* scene = aiImportFile(
 		file_name,
-		aiProcess_Triangulate | aiProcess_PreTransformVertices
+		aiProcess_Triangulate | aiProcess_PreTransformVertices //| aiProcess_CalcTangentSpace
 	);
 
 	if (!scene) {
@@ -219,6 +219,7 @@ ModelData load_mesh(const char* file_name) {
 				modelData.mTextureCoords.push_back(vec2(vt->x, vt->y));
 			}
 			if (mesh->HasTangentsAndBitangents()) {
+				printf("hello");
 				/* You can extract tangents and bitangents here              */
 				/* Note that you might need to make Assimp generate this     */
 				/* data for you. Take a look at the flags that aiImportFile  */
@@ -436,12 +437,7 @@ void generateObjectBufferMesh() {
 #pragma endregion VBO_FUNCTIONS
 
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget);
 
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 const float radius = 10.0f;
 
@@ -472,6 +468,8 @@ float rotatingSnowMan = 2;
 float current_x = 0; 
 float current_z = 40;
 
+float steps = 0;
+float spin = 0;
 
 void display(){
 
@@ -616,70 +614,6 @@ void display(){
 
 	glDrawArrays(GL_TRIANGLES, 3, plane_data.mPointCount);
 
-	mat4 snowman = identity_mat4();
-	snowman = rotate_y_deg(snowman, rotatingSnowMan);
-	snowman = translate(snowman, vec3(current_x, 0.0f, current_z));
-	
-	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, snowman_vp_vbo);
-	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, snowman_vn_vbo);
-	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(loc3);
-	glBindBuffer(GL_ARRAY_BUFFER, snowman_vt_vbo);
-	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowman.m);
-
-	glBindTexture(GL_TEXTURE_2D, snowManTexture);
-
-	glDrawArrays(GL_TRIANGLES, 3, mesh_data.mPointCount);
-
-	planeShader.setVec3("material.ambient", vec3(0.5f, 0.5f, 0.5f));
-	planeShader.setVec3("material.specular", vec3(0.1f, 0.1f, 0.1f)); // specular lighting doesn't have full effect on this object's material
-	planeShader.setFloat("material.shininess", 10.0f);
-	planeShader.setInt("material.diffuse", 0.3);
-	mat4 arms = identity_mat4();
-	arms = rotate_z_deg(arms, rotate_z);
-	arms = snowman * arms;
-
-	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, arms_vp_vbo);
-	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, arms_vn_vbo);
-	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(loc3);
-	glBindBuffer(GL_ARRAY_BUFFER, arms_vt_vbo);
-	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, arms.m);
-
-	glBindTexture(GL_TEXTURE_2D, barkTexture);
-
-	glDrawArrays(GL_TRIANGLES, 3, arms_data.mPointCount);
-
-	planeShader.setVec3("material.ambient", vec3(0.0f, 0.0f, 0.0f));
-	planeShader.setVec3("material.specular", vec3(1.0f, 1.0f, 1.0f));
-	planeShader.setFloat("material.shininess", 100.0f);
-
-	mat4 hat = identity_mat4();
-	hat = rotate_y_deg(hat, angle);
-	hat = snowman * hat;
-
-	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, hat_vp_vbo);
-	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, hat_vn_vbo);
-	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(loc3);
-	glBindBuffer(GL_ARRAY_BUFFER, hat_vt_vbo);
-	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, hat.m);
-
-	glBindTexture(GL_TEXTURE_2D, hatTexture);
-
-	glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
 
 
 	planeShader.setVec3("material.ambient", vec3(0.7f, 0.7f, 0.7f));
@@ -760,13 +694,27 @@ void display(){
 		}
 	}
 
-	for (int i = 0; i < 9; i++) {
+	bool on = false; 
+	for (int i = 0; i < 10; i++) {
 		planeShader.setVec3("material.ambient", vec3(0.3f, 0.3f, 0.3f));
 		planeShader.setVec3("material.specular", vec3(0.2f, 0.2f, 0.2f)); // specular lighting doesn't have full effect on this object's material
 		planeShader.setFloat("material.shininess", 20.0f);
 		
+
+
 		mat4 snowman = identity_mat4();
-		snowman = translate(snowman, vec3(-75.0f+i*20, 0.0f, forward_x));
+		snowman = rotate_y_deg(snowman, rotatingSnowMan);
+		snowman = rotate_y_deg(snowman, spin);
+		snowman = rotate_z_deg(snowman, steps);
+		if (on) {
+			snowman = rotate_y_deg(snowman, 180);
+			snowman = translate(snowman, vec3(-75.0f + (i - 1) * 10, 0.0f, -forward_x));
+		}
+		else {
+			
+			snowman = translate(snowman, vec3(-75.0f + i * 10, 0.0f, 20+ forward_x));
+		}
+		
 		glEnableVertexAttribArray(loc1);
 		glBindBuffer(GL_ARRAY_BUFFER, snowman_vp_vbo);
 		glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -827,9 +775,9 @@ void display(){
 		glBindTexture(GL_TEXTURE_2D, hatTexture);
 
 		glDrawArrays(GL_TRIANGLES, 3, hat_data.mPointCount);
+
+		on = !on;
 	}
-
-
 
 	mat4 fire = identity_mat4();
 	fire = translate(fire, vec3(30.0f, 2.5f, 30.0f));
@@ -876,10 +824,6 @@ void display(){
 
 		glDrawArrays(GL_TRIANGLES, 3, dome_data.mPointCount);
 	}
-	
-
-	
-	
 
 	glutSwapBuffers();
 }
@@ -888,12 +832,15 @@ void display(){
 bool start = false;
 float x = 3.0f;
 float y = 3.0f;
+float direction1 = 0.5;
 float z = 10.0f;
 float  delta = 0;
 
 GLfloat treeRotate = 0.1;
 
 float direction = 0.5;
+bool turned = false;
+
 
 void updateScene() {	
 
@@ -919,20 +866,33 @@ void updateScene() {
 		}
 		forward_z += x * delta;
 		rotate_z += z * delta;
-		if (forward_x > 40.0f || forward_x < 0.f) {
-			y = -y;
-			direction = -direction;
+		if (forward_x > 20.0f || forward_x < -20.f) {
+			if (turned) {
+				y = -y;
+				//direction = -direction;
+				turned = !turned;
+			}
+			else {
+				spin+= 1.0f;
+				if (fmodf(spin,	90.0f) == 0) {
+					
+					turned = !turned;
+				}
+				
+			}
+			
 		}
 		forward_x += y * delta;
-		angle += 1.0f;
 
-		// snowman dance
-		if (rotatingSnowMan > 180.0f || rotatingSnowMan < -180.0f) {
+		
+		angle += 1.0f;
+		steps += direction;
+
+		// snowman stepping
+		if (rotatingSnowMan > 10.0f || rotatingSnowMan < -10.0f) {
 			direction = -direction;
 		}
 		
-		current_z += direction/5;
-		current_x += direction/5;
 		rotatingSnowMan += direction; 
 	}
 	
