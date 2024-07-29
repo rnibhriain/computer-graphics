@@ -1,5 +1,8 @@
 # Computer Graphics
-Major assignment for module: CSU44052
+
+2022 - 2023
+
+Major OpenGL assignment for module: CSU44052
 
 ## 3D winter wonderland visualization basic features:
 - crowd of animated 3D snowman using modern shader-based OpenGL
